@@ -6,7 +6,12 @@
 (defsystem init-system [self]
   (filter :init)
   (on-add [e]
-    (e:init)))
+    (e:init)
+    (when (and e.pivot e.width e.height)
+      (set e.left (- e.x (* e.pivot.x e.width)))
+      (set e.top (- e.y (* e.pivot.y e.height)))
+      (set e.right (+ e.left e.width)) 
+      (set e.bottom (+ e.top e.height)))))
 
 (defsystem destroy-system [self]
   (filter :destroy)
@@ -15,12 +20,6 @@
 
 (defsystem update-system [self scene]
   (filter :update)
-  (on-add [e]
-   (when (and e.pivot e.width e.height)
-     (set e.left (- e.x (* e.pivot.x e.width)))
-     (set e.top (- e.y (* e.pivot.y e.height)))
-     (set e.right (+ e.left e.width)) 
-     (set e.bottom (+ e.top e.height))))
   (preprocess [dt]
     (scene.box2d-world:update dt))
   (process [e dt]

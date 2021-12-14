@@ -19,9 +19,9 @@
   (ui.draw {:width (love.graphics.getWidth)
             :height 30
             :root [:view {:style {:padding 4 :background-color [1 0 0 0.5]}}
-                   [:view {} [:text {:color :white} (.. "FPS: " (love.timer.getFPS))]]
+                   [:view {} [:text {:color :white} (.. "FPS: " (love.timer.getFPS))]]]})))
                    ;[:view {} [:text {:color :white} (.. "ECS Entities: " (r.game.scene.ecs-world.getEntityCount))]]
-                   [:view {} [:text {:color :white} (.. "Bump Rects: " (length r.game.scene.bump-world.rects))]]]})))
+                   ;[:view {} [:text {:color :white} (.. "Bump Rects: " (length r.game.scene.bump-world.rects))]]]})))
 
 (fn love.joystickpressed [joystick key]
  (input.joystickpressed joystick key))

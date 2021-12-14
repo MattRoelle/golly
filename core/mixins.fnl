@@ -9,13 +9,13 @@
 (require-macros :golly)
 
 (defmixin litsprite [self img color]
-  (prop :flashtimer 1)
-  (prop :colorkey color)
-  (prop :color (colors.lookup-color color 1))
-  (prop :flashduration 0.07)
-  (prop :asset (. game.assets img))
-  (prop :width (self.asset:getWidth))
-  (prop :height (self.asset:getHeight))
+  (field :flashtimer 1)
+  (field :colorkey color)
+  (field :color (colors.lookup-color color 1))
+  (field :flashduration 0.07)
+  (field :asset (. game.assets img))
+  (field :width (self.asset:getWidth))
+  (field :height (self.asset:getHeight))
   (on :update [dt]
     (set self.flashtimer (+ self.flashtimer dt))
     (let [t (math.min 1 (/ self.flashtimer self.flashduration))
@@ -156,16 +156,20 @@
                                        props))))
 
 (defmixin mouse-interaction [self props]
-  (set self.mousestate (machine.create {:initial :idle
-                                        :events [{:name :hover :from :idle :to :hovered}
-                                                 {:name :mouseout :from :hovered :to :idle}]
-                                        :callbacks {:onenterhovered #(when self.mouseover (self:mouseover))
-                                                    :onenteridle #(when self.mouseout (self:mouseout))}}))
+  (field :mousestate 
+         (statemachine :idle
+                       (transitions 
+                         (hover {:from :idle :to :hovered})
+                         (mouseout {:from :hovered :to :idle}))
+                       (state :hovered 
+                         (on-enter [] (when self.mouseover (self:mouseover)))
+                         (on-exit [] (when self.mouseout (self:mouseout))))))
+
   (set self.inputsub (beholder.observe :input 1 :mousepress
                                        (fn [btn]
-                                         (when (and self.mouseclick
+                                         (when (and self.mousepress
                                                     (= self.mousestate.current :hovered))
-                                           (self:mouseclick)))))
+                                           (self:mousepress)))))
   (on :destroy [] (beholder.stopObserving self.inputsub))
   (on :drawdebug []
    (love.graphics.setColor 0 1 0 1)

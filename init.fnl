@@ -19,6 +19,7 @@
 (local gollymath (require :golly.math))
 (local assets (require :golly.assets))
 (local easing (require :lib.easing))
+(local statemachine (require :golly.statemachine))
 
 (var last-scenefn nil)
 
@@ -39,7 +40,8 @@
    : colors
    : graphics
    : font
-   : assets})
+   : assets
+   : statemachine})
 
 (fn module.load-raw-scene [f name]
  (set last-scenefn f)

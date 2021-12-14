@@ -4,19 +4,33 @@
 (local StateMachine {:prototype {}})
 
 (fn StateMachine.prototype.get-transition [self k]
+  ;(print "get-traznsition" k)
   (let [transitions (. self.__transitions self.current)
         global-transitions (. self.__transitions :*)]
     (or (?. transitions k)
         (?. global-transitions k))))
 
+; (fn StateMachine.prototype.on-exit [self k fn]
+;   (set (. self.__callbacks.on-exit k) (or (. self.__callbacks.on-exit k) {}))
+;   (table.insert (. self.__callbacks.on_exit k) fn))
+
+; (fn StateMachine.prototype.on-enter [self k fn]
+;   (set (. self.__callbacks.on-enter k) (or (. self.__callbacks.on-enter k) {}))
+;   (table.insert (. self.__callbacks.on_enter k) fn))
+
+(fn StateMachine.prototype.send [self evtype ...]
+  (let [transition (self:get-transition evtype)]
+    (when transition
+      (self:transition transition ...))))
+
 (fn StateMachine.__index [self k]
   (if (. StateMachine.prototype k)
-    (. StateMachine.prototype k)
-    (let [transition (self:get-transition k)]
-      (if transition
-        #(self:transition transition $2 $3 $4 $5 $6 $7 $8 $9)
-        (let [state (. self.__states self.current)]
-          (?. state k))))))
+      (. StateMachine.prototype k)
+      (let [state (. self.__states self.current)
+            sval (?. state k)]
+        (if sval
+            sval
+            #(self:send k $...)))))
 
 (fn StateMachine.prototype.transition [self to ...]
   (let [exit-callbacks  (. self.__callbacks.on-exit self.current)
@@ -31,10 +45,9 @@
     (each [_ {: name : from : to} (ipairs props.transitions)]
       (assert name "Must pass transition name")
       (assert to "Must pass transition to")
-      (tset transitions (or from :*) (or (. transitions from) {}))
-      (if from
-        (tset (. transitions from) name to)
-        (tset (. transitions :*) name to)))
+      (let [from-k (or from :*)]
+        (tset transitions from-k (or (. transitions from-k) {}))
+        (tset (. transitions from-k) name to)))
     (setmetatable
       {:__transitions transitions
        :current initial-state
@@ -58,78 +71,4 @@
 ; (smtest:update 5)
 ; (print smtest.x)
 
-(macro statemachine [initial-state ...]
-  (local result-body [])
-  `(let [states# {}
-         callbacks# {:on-enter [] 
-                     :on-exit []}]
-     (var transitions# [])
-    ,(each [_ [op & rest] (ipairs [...])]
-      (match (tostring op)
-       :state 
-       (let [[name & body] rest]
-        (table.insert result-body `(tset states# ,name {}))
-        (table.insert result-body `(tset callbacks#.on-enter ,name []))
-        (table.insert result-body `(tset callbacks#.on-exit ,name []))
-        (each [_ [op & rest] (ipairs body)]
-           (table.insert result-body 
-             (match (tostring op)
-              :field
-              `(tset (. states# ,name) ,(. rest 1) ,(. rest 2))
-              :on-enter 
-              (let [[arglist & fn-body] rest]
-                `(table.insert (. callbacks#.on-enter ,name)
-                               (fn ,arglist ,(unpack fn-body))))
-              :on-exit
-              (let [[arglist & fn-body] rest]
-                `(table.insert (. callbacks#.on-exit ,name)
-                               (fn ,arglist ,(unpack fn-body))))))))
-       :transitions
-       (each [_ [name conditions] (ipairs rest)]
-          (assert conditions.to "Must pass conditions.to")
-          (table.insert result-body 
-            `(set transitions#
-                  (lume.concat
-                    transitions#
-                    ,(if (and conditions.from (= (type conditions.from) :table))
-                         (icollect [_ fromstate (ipairs conditions.from)]
-                           `{:name ,(tostring name) 
-                             :from ,fromstate 
-                             :to ,conditions.to})
-                         `[{:name ,(tostring name)
-                            :from ,conditions.from
-                            :to ,conditions.to}])))))))
-    (unpack ,result-body)
-    (create-statemachine ,initial-state {:transitions transitions# 
-                                         :states states#
-                                         :callbacks callbacks#})))
-(macrodebug
-  (statemachine :idle
-     (transitions
-       (jump {:from :idle :to :airborn})
-       (land {:from :airborn :to :idle})
-       (die {:to :dead}))
-     (state :idle
-       (field :x 100)
-       (on-enter [] (print "enter idle 22"))
-       (on-exit [] (print "exit idle 22")))))
-
-(local smtest2 
- (statemachine :idle
-  (transitions
-    (jump {:from :idle :to :airborn})
-    (land {:from :airborn :to :idle})
-    (die {:to :dead}))
-  (state :idle
-    (field :x 100)
-    (on-enter [] (print "enter idle 22"))
-    (on-exit [] (print "exit idle 22")))
-  (state :airborn
-    (field :x 200))))
-
-(print "test 2")
-(print smtest2.x)
-(smtest2:jump)
-(print smtest2.x)
-(smtest2:land)
-
+create-statemachine

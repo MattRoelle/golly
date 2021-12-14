@@ -1,3 +1,84 @@
+(fn += [x n] `(set ,x (+ ,x ,n)))
+(fn -= [x n] `(set ,x (- ,x ,n)))
+(fn *= [x n] `(set ,x (* ,x ,n)))
+(fn /= [x n] `(set ,x (/ ,x ,n)))
+
+(fn statemachine [initial-state ...]
+  (local result-body [])
+  `(let [states# {}
+         callbacks# {:on-enter [] 
+                     :on-exit []}]
+     (var transitions# [])
+    ,(each [_ [op & rest] (ipairs [...])]
+      (match (tostring op)
+       :state 
+       (let [[name & body] rest]
+        (table.insert result-body `(tset states# ,name {}))
+        (table.insert result-body `(tset callbacks#.on-enter ,name []))
+        (table.insert result-body `(tset callbacks#.on-exit ,name []))
+        (each [_ [op & rest] (ipairs body)]
+           (table.insert result-body 
+             (match (tostring op)
+              :field
+              `(tset (. states# ,name) ,(. rest 1) ,(. rest 2))
+              :on-enter 
+              (let [[arglist & fn-body] rest]
+                `(table.insert (. callbacks#.on-enter ,name)
+                               (fn ,arglist ,(unpack fn-body))))
+              :on-exit
+              (let [[arglist & fn-body] rest]
+                `(table.insert (. callbacks#.on-exit ,name)
+                               (fn ,arglist ,(unpack fn-body))))))))
+       :transitions
+       (each [_ [name conditions] (ipairs rest)]
+          (assert conditions.to "Must pass conditions.to")
+          (table.insert result-body 
+            `(set transitions#
+                  (lume.concat
+                    transitions#
+                    ,(if (and conditions.from (= (type conditions.from) :table))
+                         (icollect [_ fromstate (ipairs conditions.from)]
+                           `{:name ,(tostring name) 
+                             :from ,fromstate 
+                             :to ,conditions.to})
+                         `[{:name ,(tostring name)
+                            :from ,conditions.from
+                            :to ,conditions.to}])))))))
+    (unpack ,result-body)
+    ((. (require :golly) :statemachine)
+     ,initial-state {:transitions transitions# 
+                     :states states#
+                     :callbacks callbacks#})))
+; (macrodebug
+;   (statemachine :idle
+;      (transitions
+;        (jump {:from :idle :to :airborn})
+;        (land {:from :airborn :to :idle})
+;        (die {:to :dead}))
+;      (state :idle
+;        (field :x 100)
+;        (on-enter [] (print "enter idle 22"))
+;        (on-exit [] (print "exit idle 22")))))
+
+; (local smtest2 
+;  (statemachine :idle
+;   (transitions
+;     (jump {:from :idle :to :airborn})
+;     (land {:from :airborn :to :idle})
+;     (die {:to :dead}))
+;   (state :idle
+;     (field :x 100)
+;     (on-enter [] (print "enter idle 22"))
+;     (on-exit [] (print "exit idle 22")))
+;   (state :airborn
+;     (field :x 200))))
+
+; (print "test 2")
+; (print smtest2.x)
+; (smtest2:jump)
+; (print smtest2.x)
+; (smtest2:land)
+
 (fn with-shader [shader ...]
   `(do
     (love.graphics.setShader ,shader)
@@ -53,35 +134,14 @@
                   :on 
                   (let [[evtype arglist & body] rest]
                     `(: ,self :on ,evtype (fn ,arglist ,(unpack body)) ,(tostring name)))
+                  :mixins
+                  `(doto ,self ,(unpack rest))
                   :mixin
                   `(doto ,self ,(unpack rest))
-                  :prop 
+                  :field 
                   (let [[k v] rest]
                     `(tset ,self ,k ,v))
                   _ expr))))))))
-
-; (macro defmixin2 [name arglist ...]
-;   (let [self (. arglist 1)]
-;     `(fn ,name ,arglist
-;        (do 
-;          ,(unpack 
-;             (icollect [_ expr (ipairs [...])]
-;               (let [[op & rest] expr]
-;                 (match (tostring op)
-;                   :on 
-;                   (let [[evtype arglist & body] rest]
-;                     `(: ,self :on ,evtype (fn ,arglist ,body)))
-;                   :mixin
-;                   `(doto ,self ,(unpack rest))
-;                   :prop 
-;                   (let [[k v] rest]
-;                     `(tset ,self ,k ,v))
-;                   _ expr))))))))
-
-; (macrodebug
-;   (defmixin2 blah [self]
-;     (mixin (m-2 1)
-;              (m-3 1))))
 
 (fn defentity [name [self & arglist] initial-props ...]
   (let [proparg (. arglist 1)]
@@ -102,7 +162,7 @@
                   `(doto ,self ,(unpack rest))
                   :mixin
                   `(doto ,self ,(unpack rest))
-                  :prop 
+                  :field 
                   (let [[k v] rest]
                     `(tset ,self ,k ,v))
                   _ expr)))))
@@ -137,29 +197,6 @@
                (. (require :lib.tiny) :processingSystem))]
        (ctor# ,self)))))
 
-(fn statemachine [initial-state ...]
-  `(let [m# {:initial ,initial-state
-             :events []
-             :callbacks {}}]
-     ,(icollect [_ expr (ipairs [...])]
-                (let [[op & rest] expr]
-                  (if
-                    (= op (sym :event))
-                    (let [[name evfields] rest]
-                      ;(print "inserting event" ((require :lib.inspect) evfields))
-                      `(table.insert m#.events
-                                     (lume.merge {:name ,name} ,evfields)))
-                    (= op (sym :callback))
-                    (let [[fields & body] rest
-                          _ (assert (not (and fields.from fields.to))
-                                    "Can only pass either 1 from or 1 to expr")
-                          k (.. "on"
-                                (if fields.from :exit
-                                    fields.to :enter
-                                    (error "Invalid callback descriptor"))
-                                (or fields.from fields.to))]
-                      `(tset m#.callbacks ,k (fn [] (do ,body)))))))
-     ((. (require :lib.statemachine) :create) m#)))
 
 {: with-stencil
  : with-shader
@@ -171,4 +208,8 @@
  : defsystem
  : defentity
  : defmixin
- : statemachine}
+ : statemachine
+ : +=
+ : -=
+ : *=
+ : /=}
