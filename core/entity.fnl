@@ -1,6 +1,7 @@
 (local inspect (require :lib.inspect))
 (local lume (require :lib.lume))
 (local helpers (require :golly.helpers))
+(local timeline (require :golly.timeline))
 
 (local Entity {:prototype {}})
 
@@ -22,6 +23,7 @@
                               Handler)))
 
 (fn Entity.prototype.destroy! [self]
+  (when self.destroyed (lua :return))
   (table.insert self.scene.removal-queue self)
   (set self.destroyed true))
 
@@ -36,6 +38,13 @@
   (table.insert self.children child)
   child)
 
+(fn Entity.prototype.timeline [self name ...]
+  (when (. self.__timelines name)
+    (pp (. self.__timelines name))
+    (: (. self.__timelines name) :destroy!))
+  (tset self.__timelines name 
+        (self:add-child
+          (timeline ...))))
 
 (fn Entity.__index [self k b]
   (if (. Entity.prototype k)
@@ -48,11 +57,13 @@
           (each [_ h (ipairs handlers)]
             (h ...)))))))
 
+
 (fn new-entity [props]
   (setmetatable (lume.merge {:_handlers {}
                              :x 0 
                              :y 0 
                              :z 0
+                             :__timelines {}
                              :screen-z 0
                              :scaleX 1 
                              :scaleY 1

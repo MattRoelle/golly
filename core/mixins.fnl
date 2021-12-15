@@ -155,6 +155,13 @@
                                                           (: self k $1)))}
                                        props))))
 
+(defmixin m-input [self ...]
+  (set self.__inputsub
+       (beholder.observe :input ...
+                         #(self:input $...)))
+  (on :destroy []
+      (beholder.stopObserving self.__inputsub)))
+
 (defmixin mouse-interaction [self props]
   (field :mousestate 
          (statemachine :idle
@@ -165,11 +172,12 @@
                          (on-enter [] (when self.mouseover (self:mouseover)))
                          (on-exit [] (when self.mouseout (self:mouseout))))))
 
-  (set self.inputsub (beholder.observe :input 1 :mousepress
-                                       (fn [btn]
-                                         (when (and self.mousepress
-                                                    (= self.mousestate.current :hovered))
-                                           (self:mousepress)))))
+  (set self.inputsub
+       (beholder.observe :input 1 :mousepress
+                         (fn [btn]
+                           (when (and self.mousepress
+                                      (= self.mousestate.current :hovered))
+                             (self:mousepress)))))
   (on :destroy [] (beholder.stopObserving self.inputsub))
   (on :drawdebug []
    (love.graphics.setColor 0 1 0 1)
@@ -214,4 +222,5 @@
  ;: car
  : timer
  : mouse-interaction
- : bullet}
+ : bullet
+ :input m-input}

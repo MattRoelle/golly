@@ -1,22 +1,14 @@
 (local inspect (require :lib.inspect))
 (local lume (require :lib.lume))
+(local helpers (require :golly.helpers))
 
 (local StateMachine {:prototype {}})
 
 (fn StateMachine.prototype.get-transition [self k]
-  ;(print "get-traznsition" k)
   (let [transitions (. self.__transitions self.current)
         global-transitions (. self.__transitions :*)]
     (or (?. transitions k)
         (?. global-transitions k))))
-
-; (fn StateMachine.prototype.on-exit [self k fn]
-;   (set (. self.__callbacks.on-exit k) (or (. self.__callbacks.on-exit k) {}))
-;   (table.insert (. self.__callbacks.on_exit k) fn))
-
-; (fn StateMachine.prototype.on-enter [self k fn]
-;   (set (. self.__callbacks.on-enter k) (or (. self.__callbacks.on-enter k) {}))
-;   (table.insert (. self.__callbacks.on_enter k) fn))
 
 (fn StateMachine.prototype.send [self evtype ...]
   (let [transition (self:get-transition evtype)]
@@ -26,6 +18,7 @@
 (fn StateMachine.__index [self k]
   (if (. StateMachine.prototype k)
       (. StateMachine.prototype k)
+      ;#(self:send k $...)
       (let [state (. self.__states self.current)
             sval (?. state k)]
         (if sval
@@ -33,10 +26,14 @@
             #(self:send k $...)))))
 
 (fn StateMachine.prototype.transition [self to ...]
+  (when (= self.current to) (lua :return))
   (let [exit-callbacks  (. self.__callbacks.on-exit self.current)
         enter-callbacks (. self.__callbacks.on-enter to)]
     (each [_ cb (ipairs (or exit-callbacks []))] (cb ...))
     (each [_ cb (ipairs (or enter-callbacks []))] (cb ...)))
+  ; (each [k v (pairs (or (. self.__states to) {}))]
+  ;   (print k (inspect v))
+  ;   (tset self k v))
   (set self.current to))
 
 (fn create-statemachine [initial-state props]
@@ -48,12 +45,14 @@
       (let [from-k (or from :*)]
         (tset transitions from-k (or (. transitions from-k) {}))
         (tset (. transitions from-k) name to)))
-    (setmetatable
-      {:__transitions transitions
-       :current initial-state
-       :__callbacks (or props.callbacks {})
-       :__states (or props.states {})}
-      StateMachine)))
+    (let [sm (setmetatable
+              {:__transitions transitions
+               :__callbacks (or props.callbacks {})
+               :__states (or props.states {})
+               :current initial-state}
+              StateMachine)]
+      ;(sm:transition initial-state)
+      sm)))
 
 ; (local smtest 
 ;   (create-statemachine :idle

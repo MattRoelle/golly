@@ -45,7 +45,13 @@
 (local Timeline {})
 (set Timeline.__index Timeline)
 
+(fn Timeline.destroy! [self]
+  (when self.destroyed (lua :return))
+  (table.insert self.scene.removal-queue self)
+  (set self.destroyed true))
+
 (fn Timeline.update [self dt]
+  (when self.destroyed (lua :return))
   (when (> self.ix (length self.stages))
       (lua "return nil"))
   (let [current-stage (. self.stages self.ix)
