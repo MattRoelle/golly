@@ -49,7 +49,7 @@
  (set self.canvas (love.graphics.newCanvas game.stage-width game.stage-height))
  (self.ecs-world:addSystem (systems.camera-render-system self.canvas))
  (self.ecs-world:addSystem (systems.debug-render-system self.canvas))
- (self.ecs-world:addSystem (systems.screen-render-system self.canvas))
+ ;(self.ecs-world:addSystem (systems.screen-render-system self.canvas))
  (self.ecs-world:addSystem (systems.window-render-system))
  (set self.scene-time 0)
  (love.physics.setMeter 100)
@@ -60,25 +60,6 @@
  (let [self (setmetatable {:idmap {} :tagmap {}} Scene)]
    (self:init)
    self))
-
-(fn fade [scene]
-  (var timer 0)
-  (set scene.fader
-       (tiny.addEntity
-         scene.ecs-world
-         {:reset #(set ($1.fadetimer $1.direction $1.cb) (values 1 -1 $2))
-          :fadetimer 0
-          :direction 1
-          :screen-z 100000
-          :update
-          (fn [self dt]
-            (set self.fadetimer (+ self.fadetimer (* self.direction dt)))
-            (when (and (or (< self.fadetimer 0) (> self.fadetimer 2)) self.cb)
-              (self.cb)))
-          :drawscreen
-          (fn [self]
-            (love.graphics.setColor 0 0 0 (math.max 0 (- 1 self.fadetimer)))
-            (love.graphics.rectangle :fill 0 0 (love.graphics.getWidth) (love.graphics.getHeight)))})))
 
 (fn draw-game-frame [scene]
   (set scene.shake-timer 1)
@@ -123,16 +104,5 @@
                                    (love.graphics.draw game.scene.canvas 0 0)
                                    (love.graphics.pop)))]})))})))
 
-
-(fn ui-scene [scene c]
- (local component
-   (tiny.addEntity scene.ecs-world
-                   {:drawscreen (c:draw 0 0 (love.graphics.getWidth) (love.graphics.getHeight))
-                    :destroy (c:destroy)}))
- (component:focus))
-
-
-{: fade
- : create-scene
- : draw-game-frame
- : ui-scene}
+{: create-scene
+ : draw-game-frame}

@@ -2,6 +2,7 @@
 (fn -= [x n] `(set ,x (- ,x ,n)))
 (fn *= [x n] `(set ,x (* ,x ,n)))
 (fn /= [x n] `(set ,x (/ ,x ,n)))
+(fn vec [...] `((. (require :golly.math.vector) :vec) ,...))
 
 (fn statemachine-state [states callbacks transitions result-body expr]
   (let [[op & rest] expr
@@ -198,6 +199,8 @@
       `(doto ,self ,(unpack rest))
       :field 
       (let [[k v] rest] `(tset ,self ,k ,v))
+      :prop 
+      (let [[k v] rest] `(tset ,self ,k ,v))
       _ expr)))
 
 (fn defmixin [name arglist ...]
@@ -208,12 +211,11 @@
             (icollect [_ expr (ipairs [...])]
               (entity-expr self name expr)))))))
 
-(fn defentity [name [self & arglist] initial-props ...]
+(fn defentity [name [self & arglist] ...]
   (let [proparg (. arglist 1)]
     `(fn ,name ,arglist
        (var ,self nil)
-       (set ,self ((. (require :golly.core.entity) :new-entity)
-                   (lume.merge ,initial-props (or ,proparg {}))))
+       (set ,self ((. (require :golly.core.entity) :new-entity) (or ,proparg {})))
        (tset ,self :__name ,(tostring name))
        (do 
          ,(unpack 
@@ -268,4 +270,5 @@
  : -=
  : *=
  : /=
- : timeline}
+ : timeline
+ : vec}

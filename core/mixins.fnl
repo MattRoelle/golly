@@ -44,7 +44,7 @@
   (on :init []
     (set self.body
          (love.physics.newBody self.scene.box2d-world
-                               self.x self.y
+                               self.position.x self.position.y
                                props.body-type))
     (set self.shape
          (match props.shape-type
@@ -68,7 +68,7 @@
         :rectangle (love.graphics.polygon :fill (self.body:getWorldPoints (self.shape:getPoints)))
         :circle (love.graphics.circle :fill (self.body:getX) (self.body:getY) self.r))))
   (on :update [dt]
-    (set (self.x self.y self.angle)
+    (set (self.position.x self.position.y self.angle)
          (values 
            (self.body:getX)
            (self.body:getY)
@@ -80,7 +80,7 @@
 ;               ;:filter [(bit.bor box2d-layers.cannon) (bit.bor box2d-layers.wall box2d-layers.enemy) 0]
 ;               :restitution 0.75}) 
 ;  (set self.get-directional-velocity 
-;       (fn [self x y]
+;       (fn [self.position.x y]
 ;         (let [(nx ny) (self.body:getWorldVector x y)
 ;               (vx vy) (self.body:getLinearVelocity)
 ;               dot (helpers.dot nx ny vx vy)]
@@ -185,11 +185,11 @@
   (on :update [dt]
    (set self.padding (or self.padding 0))
    (let [[mx my] (input.mouse-position)
-         left (- self.left self.padding)
-         top (- self.top self.padding)
-         right (+ self.right self.padding)
-         bottom (+ self.bottom self.padding)]
-     (when self.left
+         left (- self.bounds.left self.padding)
+         top (- self.bounds.top self.padding)
+         right (+ self.bounds.right self.padding)
+         bottom (+ self.bounds.bottom self.padding)]
+     (when self.bounds.left
         (if (and (> mx left)
                  (> my top)
                  (< mx right)
@@ -211,10 +211,10 @@
            angle (math.atan2 dy dx)]
        (self.body:setAngle angle)
        (self.body:setAngularVelocity 0))
-     (when (or (> self.x (+ game.stage-width 100))
-               (> self.y (+ game.stage-height 100))
-               (< self.x -100)
-               (< self.y -100))
+     (when (or (> self.position.x (+ game.stage-width 100))
+               (> self.position.y (+ game.stage-height 100))
+               (< self.position.x -100)
+               (< self.position.y -100))
        (self:destroy!))))
 
 {: litsprite

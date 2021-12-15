@@ -36,6 +36,8 @@
    :entity core.entity
    :path gollymath.path
    :mixins core.mixins
+   :create-store core.redux.create-store
+   :use-state core.redux.use-state
    : effects
    : colors
    : graphics
