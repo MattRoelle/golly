@@ -49,11 +49,29 @@
 (fn Vector2D.__tostring [self]
   (.. "(" self.x ", " self.y ")"))
 
-(fn Vector2D.dist [a b]
+(fn Vector2D.distance-to [a b]
   (math.sqrt (+ (^ (- a.x b.x) 2) (^ (- a.y b.y) 2))))
+
+(fn Vector2D.angle-to [a b]
+  (math.atan2 (- a.y b.y) (- a.x b.x)))
+
+(fn Vector2D.angle-from [a b]
+  (math.atan2 (- b.y a.y) (- b.x a.x)))
 
 (fn Vector2D.angle [self]
   (math.atan2 self.y self.x))
+
+(fn Vector2D.set-angle [self angle]
+  (let [len (self:length)]
+    (vec (* (math.cos angle) len)
+         (* (math.sin angle) len))))
+
+(fn Vector2D.set-angle! [self angle]
+  (let [len (self:length)]
+    (set (self.x self.y)
+         (values (* (math.cos angle) len)
+                 (* (math.sin angle) len)))))
+
 
 (fn Vector2D.rotate! [self theta]
   (let [s (math.sin theta)
@@ -71,20 +89,31 @@
 (fn Vector2D.clone [self]
   (vec self.x self.y))
 
-(fn Vector2D.mag [self]
+(fn Vector2D.length [self]
   (math.sqrt (+ (^ self.x 2) (^ self.y 2))))
+
+(fn Vector2D.set-length [self len]
+  (let [theta (self:angle)]
+    (vec (* (math.cos theta) len)
+         (* (math.sin theta) len))))
+
+(fn Vector2D.set-length! [self len]
+  (let [theta (self:angle)]
+    (set (self.x self.y)
+         (values (* (math.cos theta) len)
+              (* (math.sin theta) len)))))
 
 (fn Vector2D.magsq [self]
   (+ (^ self.x 2) (^ self.y 2)))
 
 (fn Vector2D.normalize! [self]
-  (let [mag (self:mag)]
+  (let [mag (self:length)]
     (when (= mag 0)
       (set (self.x self.y)
            (values (/ self.x mag) (/ self.y mag))))))
 
 (fn Vector2D.normalize [self]
-  (let [mag (self:mag)]
+  (let [mag (self:length)]
     (if (= mag 0)
       self
       (vec (/ self.x mag) (/ self.y mag)))))
@@ -93,7 +122,7 @@
   (+ (* self.x v.x) (* self.y v.y)))
 
 (fn Vector2D.limit! [self max]
-  (let [magsq (self:magsq)
+  (let [magsq (self:lengthsq)
         theta (self:angle)]
     (if (> magsq (^ max 2))
       (set (self.x self.y)
@@ -101,7 +130,7 @@
                    (* (math.sin theta) max))))))
 
 (fn Vector2D.limit [self max]
-  (let [magsq (self:magsq)
+  (let [magsq (self:lengthsq)
         theta (self:angle)]
     (if (> magsq (^ max 2))
       (polar-vec2 theta max)

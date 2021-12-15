@@ -41,11 +41,12 @@
   child)
 
 (fn Entity.prototype.timeline [self name ...]
-  (when (. self.__timelines name)
-    (: (. self.__timelines name) :destroy!))
-  (tset self.__timelines name 
-        (self:add-child
-          (timeline ...))))
+  (let [t (self:add-child
+            (timeline ...))]
+    (when name
+      (when (. self.__timelines name)
+        (: (. self.__timelines name) :destroy!))
+      (tset self.__timelines name t)))) 
 
 (fn Entity.prototype.apply-transform [self]
   (when self.parent (self.parent:apply-transform))
@@ -75,6 +76,7 @@
             (h ...)))))))
 
 (fn new-entity [props]
+  (print "props.position" (inspect props.position))
   (let [obj (lume.merge {:position (gollymath.vector.vec 0 0)
                          :scale (gollymath.vector.vec 1 1)
                          :pivot (gollymath.vector.vec 0 0)

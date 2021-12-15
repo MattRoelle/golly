@@ -38,9 +38,11 @@
    (do
      (if (= (type stg) "table") ; TODO: figure out why `sequence?` is undefined
          (convert-timeline-stage stg)
-         {:type :funcall :update (fn [self dt]
-                                  (stg self dt)
-                                  nil)}))))
+         {:type :funcall
+          :reset #nil
+          :update (fn [self dt]
+                   (stg self dt)
+                   nil)}))))
 
 (local Timeline {})
 (set Timeline.__index Timeline)
@@ -60,10 +62,16 @@
      (self:next-stage)))
   (if (> self.ix (length self.stages)) nil self))
 
+(fn Timeline.reset [self]
+  (set self.ix 1)
+  (each [_ stage (ipairs self.stages)]
+    (stage:reset)))
+
 (fn Timeline.next-stage [self]
   (set self.ix (+ self.ix 1)))
 
-(local RepeatTimeline {:update Timeline.update})
+(local RepeatTimeline {:update Timeline.update
+                       :reset Timeline.reset})
 (set RepeatTimeline.__index RepeatTimeline)
 
 (fn RepeatTimeline.next-stage [self]
@@ -77,15 +85,16 @@
 
 (fn repeat [...]
   (let [input [...]
-        [times & rest] input
-        typeof-times (type times)
+        [times-input & rest] input
+        typeof-times (type times-input)
+        times (if (= typeof-times :number) times-input nil)
         stages (convert-timeline-stages
-                 (if (= typeof-times :number) rest input))]
+                 (if times rest input))]
     (setmetatable {:ix 1
                    :stages stages
                    :can-continue?
-                   #(and (or (= $1.times nil) 
-                             (< $1.iteration $1.times)))
+                   #(or (= $1.times nil) 
+                        (< $1.iteration $1.times))
                    :iteration 1
                    :times times
                    :type :timeline}

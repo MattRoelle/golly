@@ -27,13 +27,14 @@
                  :__state (reducer nil nil)
                  :__reducer reducer} Store))
 
-(defmixin use-state [self store evname p]
+(defmixin use-state [self store evname p?]
   (on :init []
       (when (not self.__state-subs)
         (set self.__state-subs {}))
       (tset self.__state-subs evname
-            (store:__subscribe
-              #(when (p $1) (self:send evname $1))))) 
+            (store:subscribe
+              #(when (or (not p?) (p? $1))
+                 (: self evname $1))))) 
   (on :destroy []
       (store:unsubscribe (. self.__state-subs evname))))
 

@@ -14,8 +14,8 @@
   (field :color (colors.lookup-color color 1))
   (field :flashduration 0.07)
   (field :asset (. game.assets img))
-  (field :width (self.asset:getWidth))
-  (field :height (self.asset:getHeight))
+  (set self.size (vec (self.asset:getWidth)
+                      (self.asset:getHeight)))
   (on :update [dt]
     (set self.flashtimer (+ self.flashtimer dt))
     (let [t (math.min 1 (/ self.flashtimer self.flashduration))
@@ -25,20 +25,23 @@
   (on :init []
      (set self.shader (love.graphics.newShader "assets/shaders/lit-sprite.glsl")))
   (on :draw []
-     (love.graphics.push)
-     (love.graphics.setColor 0 0 0 1)
-     (love.graphics.rotate (- self.angle))
-     (love.graphics.translate -2 2)
-     (love.graphics.rotate self.angle)
-     (love.graphics.draw self.asset)
-     (love.graphics.pop)
-     (with-shader self.shader
-      (self.shader:send :flashing
-                        (< (or self.flashtimer 1)
-                           (or self.flashduration 0.07))
-       (love.graphics.setColor (unpack (or self.color [1 1 1 1])))
-       (love.graphics.setColor (colors.lookup-color color 1))
-       (love.graphics.draw self.asset)))))
+    (let [oldc (love.graphics.getCanvas)]
+      (when self.canvas (love.graphics.setCanvas self.canvas))
+      (love.graphics.push)
+      (love.graphics.setColor 0 0 0 1)
+      (love.graphics.rotate (- self.angle))
+      (love.graphics.translate -2 2)
+      (love.graphics.rotate self.angle)
+      (love.graphics.draw self.asset)
+      (love.graphics.pop)
+      (with-shader self.shader
+        (self.shader:send :flashing
+                          (< (or self.flashtimer 1)
+                             (or self.flashduration 0.07))
+         (love.graphics.setColor (unpack (or self.color [1 1 1 1])))
+         (love.graphics.setColor (colors.lookup-color color 1))
+         (love.graphics.draw self.asset)))
+      (when self.canvas (love.graphics.setCanvas oldc)))))
 
 (defmixin box2d [self props]
   (on :init []
@@ -181,10 +184,10 @@
   (on :destroy [] (beholder.stopObserving self.inputsub))
   (on :drawdebug []
    (love.graphics.setColor 0 1 0 1)
-   (graphics.dashed-rectangle 0 0 self.width self.height 1 4 1))
+   (graphics.dashed-rectangle 0 0 self.size.x self.size.y 1 4 1))
   (on :update [dt]
    (set self.padding (or self.padding 0))
-   (let [[mx my] (input.mouse-position)
+   (let [{:x mx :y my} (input.mouse-position)
          left (- self.bounds.left self.padding)
          top (- self.bounds.top self.padding)
          right (+ self.bounds.right self.padding)
@@ -217,10 +220,19 @@
                (< self.position.y -100))
        (self:destroy!))))
 
+(defmixin smear [self props]
+  (on :init []
+      (set self.canvas (love.graphics.newCanvas self.size.x self.size.y)))
+  (on :draw []
+      (with-canvas self.canvas
+        (love.graphics.clear 1 0 0 0.1))
+      (love.graphics.draw self.canvas)))
+
 {: litsprite
  : box2d
  ;: car
  : timer
  : mouse-interaction
  : bullet
+ : smear
  :input m-input}

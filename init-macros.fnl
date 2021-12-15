@@ -3,6 +3,10 @@
 (fn *= [x n] `(set ,x (* ,x ,n)))
 (fn /= [x n] `(set ,x (/ ,x ,n)))
 (fn vec [...] `((. (require :golly.math.vector) :vec) ,...))
+(fn lerp [...] `((. (require :golly.helpers) :lerp) ,...))
+(fn lerpangle [...] `((. (require :golly.helpers) :lerpangle) ,...))
+(fn lerpto [...] `((. (require :golly.helpers) :lerpto) ,...))
+(fn lerptoangle [...] `((. (require :golly.helpers) :lerptoangle) ,...))
 
 (fn statemachine-state [states callbacks transitions result-body expr]
   (let [[op & rest] expr
@@ -124,9 +128,7 @@
         (each [st handler (pairs ev-handlers)]
           (table.insert state-handler-body st)
           (table.insert state-handler-body `(let [,handler.arglist [...]]
-                                              (print "args" ...)
                                               ,(unpack handler.body))))
-        (print ((require :lib.inspect) ev-handlers))
         (table.insert result-body
            `(: ,self :on ,evtype
                (fn [...] 
@@ -179,6 +181,7 @@
 
 (fn with-canvas [canvas ...]
  `(let [old# (love.graphics.getCanvas)]
+
     ;(love.graphics.setCanvas ,canvas)
     ,[...]
     (love.graphics.setCanvas old#)))
@@ -193,6 +196,13 @@
       :on 
       (let [[evtype arglist & body] rest]
         `(: ,self :on ,evtype (fn ,arglist ,(unpack body)) ,(tostring name)))
+      ; :ref 
+      ; (let [[tag] rest]
+      ;   `(: ,self :on :init
+      ;       (fn []
+      ;         `(tset ,self ,tag (,self.scene:find ,tag)))))
+      :tags
+      `(tset ,self :tags [,(unpack rest)])
       :mixins
       `(doto ,self ,(unpack rest))
       :mixin
@@ -201,6 +211,10 @@
       (let [[k v] rest] `(tset ,self ,k ,v))
       :prop 
       (let [[k v] rest] `(tset ,self ,k ,v))
+      :props
+      (let [[tbl] rest]
+        `(each [k# v# (pairs ,tbl)]
+           (tset ,self k# v#)))
       _ expr)))
 
 (fn defmixin [name arglist ...]
@@ -271,4 +285,8 @@
  : *=
  : /=
  : timeline
- : vec}
+ : vec
+ : lerp 
+ : lerpangle 
+ : lerpto 
+ : lerptoangle}

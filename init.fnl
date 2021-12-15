@@ -34,6 +34,7 @@
    : easing
    :scene core.scene
    :entity core.entity
+   :math gollymath.constants
    :path gollymath.path
    :mixins core.mixins
    :create-store core.redux.create-store

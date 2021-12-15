@@ -1,5 +1,6 @@
 (local beholder (require :lib.beholder))
 (local game (require :golly.core.game))
+(local gollymath (require :golly.math))
 
 (var joysticks [])
 (var keystates [{} {} {} {}])
@@ -110,8 +111,9 @@
 
 (fn mouse-position []
   (let [(x y) (love.mouse.getPosition)]
-    [(/ x (/ (love.graphics.getWidth) game.stage-width))
-     (/ y (/ (love.graphics.getHeight) game.stage-height))]))
+    (gollymath.vector.vec
+      (/ x (/ (love.graphics.getWidth) game.stage-width))
+      (/ y (/ (love.graphics.getHeight) game.stage-height)))))
 
 {: sync-joysticks
  : movement
