@@ -1,12 +1,6 @@
 (local Vector2D {})
 (set Vector2D.__index Vector2D)
 
-(fn Vector2D.clamp [self min max]
-  (local x (math.min (math.max self.x min.x) max.x))
-  (local y (math.min (math.max self.y min.y) max.y))
-  (self:set x y)
-  self)
-
 ;; TODO: Implement Vector3d
 (local Vector3D {})
 (set Vector3D.__index #(error "TODO: Implement Vector3D"))
@@ -48,6 +42,15 @@
 
 (fn Vector2D.__tostring [self]
   (.. "(" self.x ", " self.y ")"))
+
+(fn Vector2D.clamp [self min max]
+  (vec (math.min (math.max self.x min.x) max.x)
+       (math.min (math.max self.y min.y) max.y)))
+
+(fn Vector2D.clamp! [self min max]
+  (set (self.x self.y)
+       (values (math.min (math.max self.x min.x) max.x)
+               (math.min (math.max self.y min.y) max.y))))
 
 (fn Vector2D.distance-to [a b]
   (math.sqrt (+ (^ (- a.x b.x) 2) (^ (- a.y b.y) 2))))
