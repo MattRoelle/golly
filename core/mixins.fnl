@@ -9,11 +9,11 @@
 (require-macros :golly)
 
 (defmixin litsprite [self img color]
-  (field :flashtimer 1)
-  (field :colorkey color)
-  (field :color (colors.lookup-color color 1))
-  (field :flashduration 0.07)
-  (field :asset (. game.assets img))
+  (default-prop :flashtimer 1)
+  (default-prop :colorkey color)
+  (default-prop :color (colors.lookup-color color 1))
+  (default-prop :flashduration 0.07)
+  (default-prop :asset (. game.assets img))
   (set self.size (vec (self.asset:getWidth)
                       (self.asset:getHeight)))
   (on :update [dt]
@@ -51,7 +51,7 @@
                                props.body-type))
     (set self.shape
          (match props.shape-type
-           :rectangle (love.physics.newRectangleShape 0 0 self.width self.height)
+           :rectangle (love.physics.newRectangleShape 0 0 self.size.x self.size.y)
            :circle (love.physics.newCircleShape self.r)))
     (set self.fixture 
          (love.physics.newFixture self.body self.shape (or props.mass 5)))
@@ -66,10 +66,17 @@
     (self.body:destroy))
   (on :drawdebug []
     (with-origin
-      (love.graphics.setColor 1 0.5 0.5 0.5)
+      (love.graphics.setColor 0.5 0.5 0.5 0.5)
       (match props.shape-type
-        :rectangle (love.graphics.polygon :fill (self.body:getWorldPoints (self.shape:getPoints)))
-        :circle (love.graphics.circle :fill (self.body:getX) (self.body:getY) self.r))))
+        :rectangle (love.graphics.polygon :fill
+                      (self.body:getWorldPoints (self.shape:getPoints)))
+        :circle (love.graphics.circle :fill (self.body:getX) (self.body:getY) self.r))
+      (love.graphics.setColor 0.5 0.5 1 0.5)
+      (love.graphics.setLineWidth 2)
+      (match props.shape-type
+        :rectangle (love.graphics.polygon :line
+                      (self.body:getWorldPoints (self.shape:getPoints)))
+        :circle (love.graphics.circle :line (self.body:getX) (self.body:getY) self.r))))
   (on :update [dt]
     (set (self.position.x self.position.y self.angle)
          (values 
@@ -166,7 +173,7 @@
       (beholder.stopObserving self.__inputsub)))
 
 (defmixin mouse-interaction [self props]
-  (field :mousestate 
+  (default-prop :mousestate 
          (statemachine :idle
                        (transitions 
                          (hover {:from :idle :to :hovered})

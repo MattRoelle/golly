@@ -21,6 +21,9 @@
   (process [e dt]
     (e:update dt)
     (when e.calculate-bounds! (e:calculate-bounds!))))
+
+(defsystem box2d-system [self scene]
+  (filter :body))
                 
 (defsystem camera-render-system [self canvas]
   (filter :draw)
@@ -99,4 +102,5 @@
  : camera-render-system   
  : debug-render-system
  : window-render-system
- : tag-system}
+ : tag-system
+ : box2d-system}

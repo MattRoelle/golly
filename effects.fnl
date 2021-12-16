@@ -1,42 +1,47 @@
+(require-macros :golly)
+
 (local entity (require :golly.core.entity))
 (local game (require :golly.core.game))
 (local mixins (require :golly.core.mixins))
 
-(fn physics-particle [props]  
-  (local self (entity.new-entity (lume.merge {:width 9 :z 10 :height 9 :pivot {:x 0.5 :y 0.5}} props)))
+(defentity physics-particle [self props]
+  (set self.size (vec 9 9))
+  (set self.pivot (vec 0.5 0.5))
+  (set self.z-index 10)
   (set self.r (+ 2 (* 2 (math.random)))) 
-  (mixins.box2d self {:body-type :dynamic
-                      :shape-type :circle 
-                      :restitution 1
-                      :linear-damping 8
-                      :angular-damping 20
-                      :filter [32 0 0]
-                      :mass 0.5
-                      :r self.r})
-  (mixins.timer self :die {:duration (+ 0.25 (* 0.25 (math.random)))})
+  (mixin (mixins.box2d {:body-type :dynamic
+                        :shape-type :circle 
+                        :restitution 1
+                        :linear-damping 8
+                        :angular-damping 20
+                        :filter [32 0 0]
+                        :mass 0.5
+                        :r self.r})
+         (mixins.timer :die {:duration (+ 0.25 (* 0.25 (math.random)))})
+         (mixins.litsprite (lume.randomchoice [:particle1 :particle2 :particle3]) (or self.colorkey :white)))
   (set self.scale 0.75)
+  (on :timer-die []
+      (self:destroy!)) 
+  (on :update [dt]
+      (set self.scale (* (vec 1 1) (* 0.75 (- 1 self.timers.die.pct)))))
 
-  (mixins.litsprite self (lume.randomchoice [:particle1 :particle2 :particle3]) (or self.colorkey :white))
-  (self:on :timer-die #(self:destroy!)) 
-  (self:on :update (fn [dt] (set self.scale (* 0.75 (- 1 self.timers.die.pct)))))
-
-  (local direction (* (math.random) 2 math.pi))
-  (local force (+ 0.5 (* (math.random) 0.1)))
-
-  (self:on :init #(self.body:applyLinearImpulse (* (math.cos direction) force)
-                                                (* (math.sin direction) force)))
+  (on :init []
+    (let [direction (* (math.random) 2 math.pi)
+          force (+ 0.5 (* (math.random) 0.1))]
+      (self.body:applyLinearImpulse (* (math.cos direction) force)
+                                    (* (math.sin direction) force))))
 
                   
   self)
 
 (fn explode [scene x y intensity props]
   (for [i 1 (love.math.random (* intensity 0.5) intensity)]
-    (scene:add-entity (physics-particle (lume.merge {: x : y} props)))))
+    (scene:add-entity (physics-particle (lume.merge {:position (vec x y) } props)))))
 
 (fn prompt [scene t duration]
   (let [existing (scene:find :prompt)]
     (when existing (existing:destroy!)))
-  (local self (entity.new-entity {:x 10 :y (- game.stage-height 100)}))
+  (local self (entity.new-entity {:position (vec 10 (- game.stage-height 100))}))
   (mixins.timer self :destroy {:duration (or duration 5)})
   (self:on :timer-destroy #(scene:destroy-entity self))
   (self:on :draw (fn [self] 

@@ -93,7 +93,8 @@
   (vec self.x self.y))
 
 (fn Vector2D.length [self]
-  (math.sqrt (+ (^ self.x 2) (^ self.y 2))))
+  (math.sqrt (+ (^ self.x 2)
+                (^ self.y 2))))
 
 (fn Vector2D.set-length [self len]
   (let [theta (self:angle)]

@@ -24,6 +24,9 @@
 (fn Scene.find [self tag]
   (. (or (. self.tagmap tag) []) 1))
 
+(fn Scene.find-all [self tag]
+  (or (. self.tagmap tag) []))
+
 (fn Scene.destroy [self]
   (each [_ e (ipairs self.ecs-world.entities)]
     (e:destroy!)))
@@ -33,6 +36,24 @@
   (while (> (length self.removal-queue) 0)
     (let [e (table.remove self.removal-queue 1)]
       (self.ecs-world:removeEntity e))))
+
+(fn Scene.configure-box2d-callbacks [self]
+  (fn callback [ev a b coll normalimpulse? tangentimpulse?]
+    (let [ae (self:find-by-id (a:getUserData))
+          be (self:find-by-id (b:getUserData))]
+      (when (and ae be)
+        (let [method (.. :collision- ev)]
+          (when (ae:collides? be)
+            (when (. ae method) 
+              (: ae method be coll normalimpulse? tangentimpulse?)))
+          (when (be:collides? ae)
+            (when (. be method) 
+              (: be method ae coll normalimpulse? tangentimpulse?)))))))
+  (self.box2d-world:setCallbacks
+    (partial callback :begin-contact)
+    (partial callback :end-contact)
+    (partial callback :pre-contact)
+    (partial callback :post-solve)))
 
 (fn Scene.init [self]
  (set self.idmap {})
@@ -53,7 +74,8 @@
  (self.ecs-world:addSystem (systems.window-render-system))
  (set self.scene-time 0)
  (love.physics.setMeter 100)
- (set self.box2d-world (love.physics.newWorld 0 0)))
+ (set self.box2d-world (love.physics.newWorld 0 0))
+ (self:configure-box2d-callbacks))
  ; (self.ecs-world:addSystem (systems.box2d-system)))
 
 (fn create-scene []

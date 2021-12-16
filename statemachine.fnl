@@ -27,14 +27,14 @@
 
 (fn StateMachine.prototype.transition [self to ...]
   (when (= self.current to) (lua :return))
+  (set self.current to)
   (let [exit-callbacks  (. self.__callbacks.on-exit self.current)
         enter-callbacks (. self.__callbacks.on-enter to)]
     (each [_ cb (ipairs (or exit-callbacks []))] (cb ...))
-    (each [_ cb (ipairs (or enter-callbacks []))] (cb ...)))
+    (each [_ cb (ipairs (or enter-callbacks []))] (cb ...))))
   ; (each [k v (pairs (or (. self.__states to) {}))]
   ;   (print k (inspect v))
   ;   (tset self k v))
-  (set self.current to))
 
 (fn create-statemachine [initial-state props]
   (assert props.transitions "Must pass transitions to the state machine")

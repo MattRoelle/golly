@@ -15,6 +15,17 @@
 (fn Handler.__tostring [self]
   (or self.name "anonymous"))
 
+(fn Entity.prototype.tagged? [self tag]
+  (lume.find self.tags tag))
+
+(fn Entity.prototype.collides-with! [self tag]
+  (table.insert self.__collides-with tag))
+
+(fn Entity.prototype.collides? [self ent]
+  (each [_ tag (ipairs (or ent.tags []))]
+    (when (lume.find self.__collides-with tag)
+      (lua "return true"))))
+
 (fn Entity.prototype.on [self evtype handler handler-name?]
   (tset self._handlers evtype (or (. self._handlers evtype) []))
   ;(print "handler" self.__name evtype handler handler-name?)
@@ -27,6 +38,10 @@
   (when self.destroyed (lua :return))
   (table.insert self.scene.removal-queue self)
   (set self.destroyed true))
+
+(fn Entity.prototype.add-children [self ...]
+  (each [_ child (ipairs [...])]
+    (self:add-child child)))
 
 (fn Entity.prototype.add-child [self child]
   (when (not self.children)
@@ -48,14 +63,36 @@
         (: (. self.__timelines name) :destroy!))
       (tset self.__timelines name t)))) 
 
-(fn Entity.prototype.apply-transform [self]
-  (when self.parent (self.parent:apply-transform))
+(fn Entity.prototype.apply-transform [self nested?]
+  (when self.parent (self.parent:apply-transform true))
   (love.graphics.translate self.position.x self.position.y)
   (love.graphics.rotate self.angle)
-  (love.graphics.translate (* -1 self.pivot.x self.size.x)
-                           (* -1 self.pivot.y self.size.y))
+  (when (not nested?) 
+    (love.graphics.translate (* -1 self.pivot.x self.size.x)
+                            (* -1 self.pivot.y self.size.y)))
   (love.graphics.scale (or self.scale.x 1)
                        (or self.scale.y 1)))
+
+(fn Entity.prototype.world-transform [self nested?]
+  (let [transform
+        (if self.parent
+          (self.parent:world-transform true)
+          {:position (gollymath.vector.vec 0 0)
+           :scale (gollymath.vector.vec 1 1)
+           :angle 0})]
+    (let [delta (self.position:rotate (- transform.angle))]
+      (set transform.position (+ transform.position delta)))
+    (set transform.angle (+ transform.angle self.angle))
+    (when (not nested?) 
+      (print "self.size" self.size)
+      (let [pivot (gollymath.vector.vec
+                    (* -1 self.pivot.x self.size.x)
+                    (* -1 self.pivot.y self.size.y))]
+        (pivot:rotate! transform.angle)
+        (set transform.position (+ transform.position pivot))))
+    (set transform.scale (* transform.scale self.scale))
+    (print self.__name "__wt" transform.position self.position)
+    transform))
 
 (fn Entity.prototype.calculate-bounds! [self]
   (let [left (- self.position.x (* self.pivot.x self.size.x))
@@ -73,10 +110,11 @@
           (when (and self.destroyed (not= k :destroy))
             (lua "return"))
           (each [_ h (ipairs handlers)]
-            (h ...)))))))
+            (let [(result err) (pcall h ...)]
+              (when (not result) 
+                (error (.. self.__name " " k ": " err))))))))))
 
 (fn new-entity [props]
-  (print "props.position" (inspect props.position))
   (let [obj (lume.merge {:position (gollymath.vector.vec 0 0)
                          :scale (gollymath.vector.vec 1 1)
                          :pivot (gollymath.vector.vec 0 0)
@@ -85,6 +123,7 @@
                          :parent nil
                          :z-index 0
                          :id (helpers.uuid)
+                         :__collides-with []
                          :_handlers {}
                          :__timelines {}}
                     (or props {}))]

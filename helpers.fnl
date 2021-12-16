@@ -6,9 +6,7 @@
 (local path2d_catmullrom (require :lib.path2d_catmullrom))
 
 (fn distance [e1 e2]
-    (let [dx (- e1.x e2.x)
-          dy (- e1.y e2.y)]
-        (math.sqrt (+ (* dx dx) (* dy dy)))))
+  (e1.position:distance-to e2.position))
 
 (fn closest [self entities]
  (let [by-dist (icollect [_ ent (ipairs (or entities []))]
@@ -22,8 +20,8 @@
     (tween.new duration self { :x x :y y})))
 
 (fn move-towards [self ent speed]
- (let [dx (- ent.x self.x)
-       dy (- ent.y self.y)
+ (let [dx (- ent.position.x self.position.x)
+       dy (- ent.position.y self.position.y)
        theta (math.atan2 dy dx)
        stepx (* speed (math.cos theta))
        stepy (* speed (math.sin theta))]

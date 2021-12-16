@@ -3,6 +3,7 @@
 (fn *= [x n] `(set ,x (* ,x ,n)))
 (fn /= [x n] `(set ,x (/ ,x ,n)))
 (fn vec [...] `((. (require :golly.math.vector) :vec) ,...))
+(fn polar-vec2 [...] `((. (require :golly.math.vector) :polar-vec2) ,...))
 (fn lerp [...] `((. (require :golly.helpers) :lerp) ,...))
 (fn lerpangle [...] `((. (require :golly.helpers) :lerpangle) ,...))
 (fn lerpto [...] `((. (require :golly.helpers) :lerpto) ,...))
@@ -207,14 +208,12 @@
       `(doto ,self ,(unpack rest))
       :mixin
       `(doto ,self ,(unpack rest))
-      :field 
-      (let [[k v] rest] `(tset ,self ,k ,v))
-      :prop 
-      (let [[k v] rest] `(tset ,self ,k ,v))
-      :props
+      :default-prop 
+      (let [[k v] rest] `(tset ,self ,k (or (. ,self ,k) ,v)))
+      :default-props
       (let [[tbl] rest]
         `(each [k# v# (pairs ,tbl)]
-           (tset ,self k# v#)))
+           (tset ,self k# (or (. ,self k#) v#))))
       _ expr)))
 
 (fn defmixin [name arglist ...]
@@ -286,6 +285,7 @@
  : /=
  : timeline
  : vec
+ : polar-vec2
  : lerp 
  : lerpangle 
  : lerpto 
