@@ -3,12 +3,11 @@
 (local helpers (require :golly.helpers))
 (local input (require :golly.core.input))
 (local beholder (require :lib.beholder))
-(local machine (require :lib.statemachine))
 (local graphics (require :golly.graphics))
 
 (require-macros :golly)
 
-(defmixin litsprite [self img color]
+(mixin litsprite [self img color]
   (default-prop :flashtimer 1)
   (default-prop :colorkey color)
   (default-prop :color (colors.lookup-color color 1))
@@ -24,9 +23,13 @@
       (set self.scaleY (* (or self.scale 1) s))))
   (on :init []
      (set self.shader (love.graphics.newShader "assets/shaders/lit-sprite.glsl")))
+  (on :drawdebug []
+      (love.graphics.setColor 0 1 0 1)
+      (love.graphics.circle :fill 0 0 2))
   (on :draw []
     (let [oldc (love.graphics.getCanvas)]
-      (when self.canvas (love.graphics.setCanvas self.canvas))
+      (when self.with-canvas
+        (love.graphics.setCanvas self.canvas))
       (love.graphics.push)
       (love.graphics.setColor 0 0 0 1)
       (love.graphics.rotate (- self.angle))
@@ -43,7 +46,7 @@
          (love.graphics.draw self.asset)))
       (when self.canvas (love.graphics.setCanvas oldc)))))
 
-(defmixin box2d [self props]
+(mixin box2d [self props]
   (on :init []
     (set self.body
          (love.physics.newBody self.scene.box2d-world
@@ -52,31 +55,35 @@
     (set self.shape
          (match props.shape-type
            :rectangle (love.physics.newRectangleShape 0 0 self.size.x self.size.y)
-           :circle (love.physics.newCircleShape self.r)))
+           :circle (love.physics.newCircleShape self.r)
+           :polygon (love.physics.newPolygonShape (unpack self.points))))
     (set self.fixture 
          (love.physics.newFixture self.body self.shape (or props.mass 5)))
     (self.fixture:setUserData self.id)
     (self.body:setAngularDamping (or props.angular-damping 0))
     (self.body:setLinearDamping (or props.linear-damping 0))
     (self.fixture:setRestitution (or props.restitution 0))
-    (when props.filter (self.fixture:setFilterData (unpack props.filter)))
+    (when props.filter
+      (self.fixture:setFilterData (unpack props.filter)))
     (when self.initial-velocity
       (self.body:applyLinearImpulse self.initial-velocity.x self.initial-velocity.y)))
   (on :destroy []
     (self.body:destroy))
+  (fn self.draw-box2d-shape [type]
+      (match props.shape-type
+        :rectangle (love.graphics.polygon type
+                      (self.body:getWorldPoints (self.shape:getPoints)))
+        :circle (love.graphics.circle type (self.body:getX) (self.body:getY) self.r)
+        :polygon 
+        (let [points [(self.body:getWorldPoints (self.shape:getPoints))]]
+          (love.graphics.polygon type (unpack points)))))
   (on :drawdebug []
     (with-origin
       (love.graphics.setColor 0.5 0.5 0.5 0.5)
-      (match props.shape-type
-        :rectangle (love.graphics.polygon :fill
-                      (self.body:getWorldPoints (self.shape:getPoints)))
-        :circle (love.graphics.circle :fill (self.body:getX) (self.body:getY) self.r))
+      (self.draw-box2d-shape :fill)
       (love.graphics.setColor 0.5 0.5 1 0.5)
       (love.graphics.setLineWidth 2)
-      (match props.shape-type
-        :rectangle (love.graphics.polygon :line
-                      (self.body:getWorldPoints (self.shape:getPoints)))
-        :circle (love.graphics.circle :line (self.body:getX) (self.body:getY) self.r))))
+      (self.draw-box2d-shape :line)))
   (on :update [dt]
     (set (self.position.x self.position.y self.angle)
          (values 
@@ -152,7 +159,7 @@
                            props)
                 Timer))
 
-(defmixin timer [self name props]
+(mixin timer [self name props]
   (when (not self.timers)
     (set self.timers {})
     (self:on :update
@@ -165,14 +172,14 @@
                                                           (: self k $1)))}
                                        props))))
 
-(defmixin m-input [self ...]
+(mixin m-input [self ...]
   (set self.__inputsub
        (beholder.observe :input ...
                          #(self:input $...)))
   (on :destroy []
       (beholder.stopObserving self.__inputsub)))
 
-(defmixin mouse-interaction [self props]
+(mixin mouse-interaction [self props]
   (default-prop :mousestate 
          (statemachine :idle
                        (transitions 
@@ -207,13 +214,18 @@
           (self.mousestate:hover)
           (self.mousestate:mouseout))))))
 
-(defmixin bullet [self props]
+(mixin bullet [self props]
   (set self.speed (or props.speed 30))
-  (on :hit [] (self:destroy!))
-  (on :init [] (self.body:applyLinearImpulse (* self.speed (math.cos self.direction))
-                                             (* self.speed (math.sin self.direction))))
   (set self.color (or props.color [1 1 1 1]))
   (set self.direction (or props.direction 0))
+
+  (on :hit []
+      (self:destroy!))
+
+  (on :init []
+      (self.body:applyLinearImpulse (* self.speed (math.cos self.direction))
+                                   (* self.speed (math.sin self.direction))))
+
   (on :update [dt]
      (self.body:applyForce (* self.speed (math.cos self.direction))
                            (* self.speed (math.sin self.direction)))
@@ -227,7 +239,7 @@
                (< self.position.y -100))
        (self:destroy!))))
 
-(defmixin smear [self props]
+(mixin smear [self props]
   (on :init []
       (set self.canvas (love.graphics.newCanvas self.size.x self.size.y)))
   (on :draw []

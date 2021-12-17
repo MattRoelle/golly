@@ -14,8 +14,8 @@
 (fn Store.unsubscribe [self id]
   (tset self.__subscribers id nil))
 
-(fn Store.dispatch [self action]
-  (let [new-state (self.__reducer self.__state action)]
+(fn Store.dispatch [self ...]
+  (let [new-state (self.__reducer self.__state ...)]
     (set self.__state new-state)
     (each [_ sub (ipairs self.__subscribers)]
       (sub new-state))))
@@ -27,7 +27,7 @@
                  :__state (reducer nil nil)
                  :__reducer reducer} Store))
 
-(defmixin use-state [self store evname p?]
+(mixin use-state [self store evname p?]
   (on :init []
       (when (not self.__state-subs)
         (set self.__state-subs {}))

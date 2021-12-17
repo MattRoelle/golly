@@ -10,6 +10,8 @@
 (set Vector4D.__index #(error "TODO: Implement Vector4D"))
 
 (fn vec [x y z? w?]
+  (assert x "Must pass at least x and y")
+  (assert y "Must pass at least x and y")
   (setmetatable 
     {:x x 
      :y y 
@@ -75,13 +77,12 @@
          (values (* (math.cos angle) len)
                  (* (math.sin angle) len)))))
 
-
-(fn Vector2D.rotate! [self theta]
+(fn Vector2D.rotate [self theta]
   (let [s (math.sin theta)
         c (math.cos theta)]
       (vec (+ (* c self.x) (* s self.y)) (+ (- (* s self.x)) (* c self.y)))))
 
-(fn Vector2D.rotate [self theta]
+(fn Vector2D.rotate! [self theta]
   (let [s (math.sin theta)
         c (math.cos theta)]
       (vec (+ (* c self.x) (* s self.y)) (+ (- (* s self.x)) (* c self.y)))))
@@ -110,20 +111,26 @@
 (fn Vector2D.magsq [self]
   (+ (^ self.x 2) (^ self.y 2)))
 
-(fn Vector2D.normalize! [self]
-  (let [mag (self:length)]
-    (when (= mag 0)
-      (set (self.x self.y)
-           (values (/ self.x mag) (/ self.y mag))))))
-
 (fn Vector2D.normalize [self]
   (let [mag (self:length)]
     (if (= mag 0)
       self
       (vec (/ self.x mag) (/ self.y mag)))))
 
+(fn Vector2D.normalize! [self]
+  (let [mag (self:length)]
+    (when (= mag 0)
+      (set (self.x self.y)
+           (values (/ self.x mag) (/ self.y mag))))))
+
 (fn Vector2D.dot [self v]
   (+ (* self.x v.x) (* self.y v.y)))
+
+(fn Vector2D.limit [self max]
+  (let [magsq (self:lengthsq)
+        theta (self:angle)]
+    (if (> magsq (^ max 2))
+      (polar-vec2 theta max))))
 
 (fn Vector2D.limit! [self max]
   (let [magsq (self:lengthsq)
@@ -131,14 +138,17 @@
     (if (> magsq (^ max 2))
       (set (self.x self.y)
            (values (* (math.cos theta) max)
-                   (* (math.sin theta) max))))))
-
-(fn Vector2D.limit [self max]
-  (let [magsq (self:lengthsq)
-        theta (self:angle)]
-    (if (> magsq (^ max 2))
-      (polar-vec2 theta max)
+                   (* (math.sin theta) max)))
       self)))
+
+(fn Vector2D.lerp [a b t]
+  (vec (+ (* a.x (- 1 t)) (* b.x t))
+       (+ (* a.y (- 1 t)) (* b.y t))))
+
+(fn Vector2D.lerp! [a b t]
+  (set (a.x a.y)
+       (values (+ (* a.x (- 1 t)) (* b.x t))
+               (+ (* a.y (- 1 t)) (* b.y t)))))
 
 {: vec 
  : polar-vec2}

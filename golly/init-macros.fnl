@@ -216,7 +216,7 @@
            (tset ,self k# (or (. ,self k#) v#))))
       _ expr)))
 
-(fn defmixin [name arglist ...]
+(fn mixin [name arglist ...]
   (let [self (. arglist 1)]
     `(fn ,name ,arglist
        (do 
@@ -224,7 +224,7 @@
             (icollect [_ expr (ipairs [...])]
               (entity-expr self name expr)))))))
 
-(fn defentity [name [self & arglist] ...]
+(fn class [name [self & arglist] ...]
   (let [proparg (. arglist 1)]
     `(fn ,name ,arglist
        (var ,self nil)
@@ -236,7 +236,7 @@
               (entity-expr self name expr))))
        ,self)))
 
-(fn defsystem [name [self & arglist] ...]
+(fn def-system [name [self & arglist] ...]
   `(fn ,name ,arglist
     (local ,self {})
     (do 
@@ -258,15 +258,12 @@
             :sort `(tset ,self :compare ,bodyfn)
             :on-add `(tset ,self :onAdd ,bodyfn)
             :on-remove `(tset ,self :onRemove ,bodyfn)
-            true (error (.. "Invalid child form of defsystem: " op ". Options are filter, process, pre-process, post-process, sort, on-add, on-remove")))))
+            true (error (.. "Invalid child form of def-system: " op ". Options are filter, process, pre-process, post-process, sort, on-add, on-remove")))))
      (let [ctor#
            (if (. ,self :sort)
                (. (require :lib.tiny) :sortedProcessingSystem)
                (. (require :lib.tiny) :processingSystem))]
        (ctor# ,self)))))
-
-(fn timeline [parent name ...]
-  `(: ,parent :timeline ,name ,...)) 
 
 {: with-stencil
  : with-shader
@@ -275,15 +272,14 @@
  : with-transform-push
  : with-blend-mode
  : with-canvas
- : defsystem
- : defentity
- : defmixin
+ : def-system
+ : class
+ : mixin
  : statemachine
  : +=
  : -=
  : *=
  : /=
- : timeline
  : vec
  : polar-vec2
  : lerp 

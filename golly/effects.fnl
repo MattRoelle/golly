@@ -4,7 +4,7 @@
 (local game (require :golly.core.game))
 (local mixins (require :golly.core.mixins))
 
-(defentity physics-particle [self props]
+(class physics-particle [self props]
   (set self.size (vec 9 9))
   (set self.pivot (vec 0.5 0.5))
   (set self.z-index 10)
@@ -51,7 +51,7 @@
 
 
 (fn img-flash [scene x y img color duration flasht]
-  (local self (entity.new-entity {: x : y}))
+  (local self (entity.new-entity {:position (vec x y)}))
   (mixins.timer self :destroy {:duration (or duration 5)})
   (mixins.timer self :flash {:duration (or flasht 0.07)})
   (self:on :timer-destroy #(self:destroy!))

@@ -1,4 +1,4 @@
-(local profiler (require :lib.profiler))
+;(local profiler (require :lib.profiler))
 (local input (require :golly.core.input))
 (local ui (require :golly.ui))
 (local r (require :golly.core))
@@ -15,11 +15,12 @@
 (var is-profiling false)
 
 (fn render-dbg []
- (when r.game.scene
-  (ui.draw {:width (love.graphics.getWidth)
-            :height 30
-            :root [:view {:style {:padding 4 :background-color [1 0 0 0.5]}}
-                   [:view {} [:text {:color :white} (.. "FPS: " (love.timer.getFPS))]]]})))
+  (let [game (r.game.get-game)]
+   (when game.scene
+    (ui.draw {:width (love.graphics.getWidth)
+              :height 30
+              :root [:view {:style {:padding 4 :background-color [1 0 0 0.5]}}
+                     [:view {} [:text {:color :white} (.. "FPS: " (love.timer.getFPS))]]]}))))
                    ;[:view {} [:text {:color :white} (.. "ECS Entities: " (r.game.scene.ecs-world.getEntityCount))]]
                    ;[:view {} [:text {:color :white} (.. "Bump Rects: " (length r.game.scene.bump-world.rects))]]]})))
 
@@ -32,32 +33,27 @@
 (fn love.gamepadreleased [joystick key]
  (input.gamepadreleased joystick key))
 
-(fn love.keyreleased [joystick key]
- (input.keyreleased joystick key))
-
-(fn love.keyreleased [key])
- ;(when editoropen?
-  ;(editor.handlers.keyreleased key))
+(fn love.keyreleased [...]
+ (input.keyreleased ...))
 
 (fn love.keypressed [key]
- (input.keypressed key)
+ (input.keypressed key))
  ;(when editoropen?
   ;(editor.handlers.keypressed key))
 
- (when (= key "f5") (set _G.dbg (not _G.dbg)))
- ;(when (= key "f1") (set editoropen? (not editoropen?)))
- (when (= key "f2") (love.window.setFullscreen true "exclusive"))
- (when (and is-profiling (= key "f6"))
-    (print "Ending profile session. Writing to ./profile.txt")
-    (set is-profiling false)
-    (profiler.stop)
-    (profiler.report "profile.txt"))
- (when (and (not is-profiling) (= key "f6"))
-    (print "Beginning profile")
-    (set is-profiling true)
-    (profiler.start)))
+ ;(when (= key "f5") (set _G.dbg (not _G.dbg)))
+ ;;(when (= key "f1") (set editoropen? (not editoropen?)))
+ ;(when (= key "f2") (love.window.setFullscreen true "exclusive"))
+ ;(when (and is-profiling (= key "f6"))
+ ;   (print "Ending profile session. Writing to ./profile.txt")
+ ;   (set is-profiling false)
+ ;   (profiler.stop)
+ ;   (profiler.report "profile.txt"))
+ ;(when (and (not is-profiling) (= key "f6"))
+ ;   (print "Beginning profile")
+ ;   (set is-profiling true)
+ ;   (profiler.start)))
 
-(fn love.keyreleased [key])
  ;(when editoropen?
   ;(editor.handlers.keyreleased key))
 
@@ -75,7 +71,7 @@
 
 (fn love.run []
  (repl.start)
- (local editorfont (love.graphics.newFont "FSEX300.ttf" 20))
+ ;(local editorfont (love.graphics.newFont "FSEX300.ttf" 20))
  (input.sync-joysticks)
  (love.keyboard.setTextInput true)
  (love.keyboard.setKeyRepeat true)
@@ -101,9 +97,10 @@
 
    (input.update)
 
-   (when (and r.game r.game.scene)
-     (set r.game.scene.scene-time (+ r.game.scene.scene-time dt))
-     (r.game.scene:update dt))
+   (let [game (r.game.get-game)]
+     (when (and game game.scene)
+       (set game.scene.scene-time (+ game.scene.scene-time dt))
+       (game.scene:update dt)))
 
    ; (when editor.internal.coroutines
    ;  (each [_ c (pairs editor.internal.coroutines)]

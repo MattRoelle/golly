@@ -59,17 +59,17 @@
  (set self.idmap {})
  (set self.tagmap {})
  (set self.removal-queue [])
- (game.setscene self)
- (set self.camera (gamera.new 0 0 game.stage-width game.stage-height))
- (self.camera:setWorld (* 0.5 game.stage-width) 0 game.stage-width (* 2 game.stage-height))
+ (let [{: stage-width : stage-height} (game.get-game)]
+   (set self.camera (gamera.new 0 0 stage-width stage-height))
+   (self.camera:setWorld (* 0.5 stage-width) 0 stage-width (* 2 stage-height)))
  (set self.ecs-world (tiny.world))  
  (self.ecs-world:addSystem (systems.init-system))
  (self.ecs-world:addSystem (systems.destroy-system))
  (self.ecs-world:addSystem (systems.tag-system))
  (self.ecs-world:addSystem (systems.update-system self))
  (set self.canvas (love.graphics.newCanvas game.stage-width game.stage-height))
- (self.ecs-world:addSystem (systems.camera-render-system self.canvas))
- (self.ecs-world:addSystem (systems.debug-render-system self.canvas))
+ (self.ecs-world:addSystem (systems.camera-render-system self self.canvas))
+ (self.ecs-world:addSystem (systems.debug-render-system self self.canvas))
  ;(self.ecs-world:addSystem (systems.screen-render-system self.canvas))
  (self.ecs-world:addSystem (systems.window-render-system))
  (set self.scene-time 0)
@@ -92,39 +92,40 @@
          (set self.shake-timer 0)
          (set self.shake-duration duration)
          (set self.shake-intensity intensity)))
-  (set scene.framedrawer
-       (scene:add-entity
-         {:window-z -1
-          :update
-          (fn [self dt]
-            (set self.scene.shake-timer (+ self.scene.shake-timer dt)))
-          :drawwindow
-          (fn [self]
-            (love.graphics.setCanvas)
-            (love.graphics.clear)
-            (let [[x y] (if (< self.scene.shake-timer self.scene.shake-duration)
-                          [(* (math.random) self.scene.shake-intensity)
-                           (* (math.random) self.scene.shake-intensity)]
-                          [0 0])
-                  width (love.graphics.getWidth)
-                  height (love.graphics.getHeight)]
-              (ui.draw {: width 
-                        : height
-                        : x : y
-                        :root [:custom-draw
-                               (fn [width height]
-                                 (let [sx (/ width game.stage-width)
-                                       sy (/ height game.stage-height)
-                                       s (math.min sx sy)
-                                       w (* s game.stage-width)
-                                       h (* s game.stage-height)]
-                                   (love.graphics.push)
-                                   (love.graphics.translate (- width w)
-                                                            (* 0.5 (- height h)))
-                                   (love.graphics.scale s s)
-                                   (love.graphics.setColor 1 1 1 1)
-                                   (love.graphics.draw game.scene.canvas 0 0)
-                                   (love.graphics.pop)))]})))})))
+  (let [game (game.get-game)]
+    (set scene.framedrawer
+         (scene:add-entity
+           {:window-z -1
+            :update
+            (fn [self dt]
+              (set self.scene.shake-timer (+ self.scene.shake-timer dt)))
+            :drawwindow
+            (fn [self]
+              (love.graphics.setCanvas)
+              (love.graphics.clear)
+              (let [[x y] (if (< self.scene.shake-timer self.scene.shake-duration)
+                            [(* (math.random) self.scene.shake-intensity)
+                             (* (math.random) self.scene.shake-intensity)]
+                            [0 0])
+                    width (love.graphics.getWidth)
+                    height (love.graphics.getHeight)]
+                (ui.draw {: width 
+                          : height
+                          : x : y
+                          :root [:custom-draw
+                                 (fn [width height]
+                                   (let [sx (/ width game.stage-width)
+                                         sy (/ height game.stage-height)
+                                         s (math.min sx sy)
+                                         w (* s game.stage-width)
+                                         h (* s game.stage-height)]
+                                     (love.graphics.push)
+                                     (love.graphics.translate (- width w)
+                                                              (* 0.5 (- height h)))
+                                     (love.graphics.scale s s)
+                                     (love.graphics.setColor 1 1 1 1)
+                                     (love.graphics.draw game.scene.canvas 0 0)
+                                     (love.graphics.pop)))]})))}))))
 
 {: create-scene
  : draw-game-frame}

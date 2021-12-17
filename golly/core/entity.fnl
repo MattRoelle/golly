@@ -26,6 +26,9 @@
     (when (lume.find self.__collides-with tag)
       (lua "return true"))))
 
+(fn Entity.prototype.lerpto! [self v t]
+  (self.position:lerp! v t))
+
 (fn Entity.prototype.on [self evtype handler handler-name?]
   (tset self._handlers evtype (or (. self._handlers evtype) []))
   ;(print "handler" self.__name evtype handler handler-name?)
@@ -47,9 +50,9 @@
   (when (not self.children)
     (set self.children [])
     (self:on :destroy 
-             (fn [self]
-               (each [_ child (ipairs self.children)]
-                 (child:destroy!)))))
+      (fn []
+        (each [_ child (ipairs self.children)]
+          (child:destroy!)))))
   (self.scene:add-entity child)
   (set child.parent self)
   (table.insert self.children child)
@@ -112,12 +115,12 @@
           (each [_ h (ipairs handlers)]
             (let [(result err) (pcall h ...)]
               (when (not result) 
-                (error (.. self.__name " " k ": " err))))))))))
+                (error (.. "(class=" (or self.__name "anonymous") ", mixin=" (tostring h) ", event=" k ", args= " (inspect ... {:depth 1}) "): " err))))))))))
 
 (fn new-entity [props]
   (let [obj (lume.merge {:position (gollymath.vector.vec 0 0)
                          :scale (gollymath.vector.vec 1 1)
-                         :pivot (gollymath.vector.vec 0 0)
+                         :pivot (gollymath.vector.vec 0.5 0.5)
                          :size (gollymath.vector.vec 0 0)
                          :angle 0
                          :parent nil

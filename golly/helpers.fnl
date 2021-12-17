@@ -1,9 +1,8 @@
 (local game (require :golly.core.game))
-(local tween (require :lib.tween))
 (local gizmo (require :golly.gizmo))
-(local inspect (require :lib.inspect))
 (local lume (require :lib.lume))
-(local path2d_catmullrom (require :lib.path2d_catmullrom))
+(local tween (require :lib.tween))
+(local inspect (require :lib.inspect))
 
 (fn distance [e1 e2]
   (e1.position:distance-to e2.position))
@@ -85,57 +84,6 @@
        theta (math.atan2 dy dx)]
   (lerptoangle self :angle theta (* 4 t))))
 
-(fn relative-path [angle originx originy ...]
-  (let [ret []
-        rest [...]]
-    (for [i 1 (length rest) 2]
-      (let [x (. rest i)
-            y (. rest (+ i 1))
-            [rx ry] (rotate-about-origin x y angle)]
-        (table.insert ret (+ originx rx))
-        (table.insert ret (+ originy ry))))
-    ret))
-
-(fn cmrom [t path]
-  (assert (> (length path) 8) "Minimum of 4 points required for catull-rom spline")
-  (assert (= 0 (% (length path) 2)) "Expected even number of data points for spline")
-  (let [size (/ (length path) 2)
-        i (- size 3)
-        i0 (- i 1)
-        i1 i 
-        i2 (+ i 1)
-        i3 (+ i 2)
-        tt (- (* (- size 1) t) (math.floor (* t (- size 1))))
-        p0 (* i0 2)
-        p1 (* i1 2)
-        p2 (* i2 2)
-        p3 (* i3 2)
-        (x1 y1) (values (. path p0) (. path (+ p0 1)))
-        (x2 y2) (values (. path p1) (. path (+ p1 1)))
-        (x3 y3) (values (. path p2) (. path (+ p2 1)))
-        (x4 y4) (values (. path p3) (. path (+ p3 1)))]
-    ;(pp {: i : j : points})
-    (path2d_catmullrom.point tt 0 x1 y1 x2 y2 x3 y3 x4 y4)))
-
-(fn color-constant [k]
-  (match k :red [1 0 0 1]
-           :green [0 1 0 1]
-           :blue [0 0 1 1]))
-
-(fn draw-debug-rect [x y w h color]
-  (love.graphics.setColor (unpack (color-constant color)))
-  (love.graphics.rectangle :fill x y w h))
-
-(fn draw-debug-circle [x y r color]
-  (love.graphics.setColor (unpack (color-constant color)))
-  (love.graphics.circle :fill x y r))
-
-(fn angle-between [e1 e2]
-  (math.atan2 (- e2.y e1.y) (- e2.x e1.x)))
-
-(fn dot [x1 y1 x2 y2]
-  (+ (* x1 x2) (* y1 y2)))
-
 (fn uuid []
   (let [template :xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx]
     (string.gsub template "[xy]"
@@ -154,12 +102,6 @@
   : follow
   : camfollow
   : lerptoangle
-  : relative-path
-  : cmrom
   : closest
-  : draw-debug-rect
-  : draw-debug-circle
-  : angle-between
-  : dot
   : uuid}
 

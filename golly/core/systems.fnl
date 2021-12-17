@@ -3,18 +3,18 @@
 (local game (require :golly.core.game))
 (local tiny (require :lib.tiny))
 
-(defsystem init-system [self]
+(def-system init-system [self]
   (filter :init)
   (on-add [e]
     (e:init)
     (when e.calculate-bounds! (e:calculate-bounds!))))
 
-(defsystem destroy-system [self]
+(def-system destroy-system [self]
   (filter :destroy)
   (on-remove [e]
     (e:destroy)))
 
-(defsystem update-system [self scene]
+(def-system update-system [self scene]
   (filter :update)
   (preprocess [dt]
     (scene.box2d-world:update dt))
@@ -22,17 +22,17 @@
     (e:update dt)
     (when e.calculate-bounds! (e:calculate-bounds!))))
 
-(defsystem box2d-system [self scene]
+(def-system box2d-system [self scene]
   (filter :body))
                 
-(defsystem camera-render-system [self canvas]
+(def-system camera-render-system [self scene canvas]
   (filter :draw)
   (sort [a b] (< (or a.z-index 0) (or b.z-index 0)))
   (preprocess [dt]
     (love.graphics.setCanvas canvas)
     (love.graphics.clear)
     (set (self.sx self.sy self.sw self.sh) (love.graphics.getScissor))
-    (let [cam game.scene.camera]
+    (let [cam scene.camera]
        (love.graphics.setScissor (cam:getWindow))
        (love.graphics.push)
        (local scale cam.scale)
@@ -52,12 +52,12 @@
    (love.graphics.setCanvas)
    (set self.modified true)))
 
-(defsystem debug-render-system [self canvas]
+(def-system debug-render-system [self scene canvas]
     (filter :drawdebug)
     (sort [a b] (< (or a.z-index 0) (or b.z-index 0)))
     (preprocess [dt]
       (set (self.sx self.sy self.sw self.sh) (love.graphics.getScissor))
-      (let [cam game.scene.camera]
+      (let [cam scene.camera]
          (love.graphics.setScissor (cam:getWindow))
          (love.graphics.push)
          (love.graphics.setCanvas canvas)
@@ -78,12 +78,12 @@
       (love.graphics.setCanvas)
       (love.graphics.setScissor self.sx self.sy self.sw self.sh)))
 
-(defsystem window-render-system [self canvas]
+(def-system window-render-system [self canvas]
   (filter :drawwindow)
   (sort [a b] (< (or a.window-z 0) (or b.window-z 0)))
   (process [e dt] (e:drawwindow)))
 
-(defsystem tag-system [self]
+(def-system tag-system [self]
    (filter :tags)
    (on-add [e]
     (each [_ tag (ipairs e.tags)]

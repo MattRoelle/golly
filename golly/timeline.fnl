@@ -13,6 +13,7 @@
   {:type :wait
    :duration duration
    :start-time -1
+   :__timeline true
    :t 0
    :reset #(set $1.t 0)
    :update
@@ -21,7 +22,8 @@
      (if (> self.t self.duration) nil true))})
 
 (fn convert-timeline-stage-tween [[_ duration subject target easing]]
-  {:type :tween
+  {:__timeline true 
+   :type :tween
    :tween (tween.new duration subject target easing)
    :reset #(set $1.tween (tween.new duration subject target easing))
    :update
@@ -29,22 +31,32 @@
      (if (self.tween:update dt) nil true))})
 
 (fn convert-timeline-stage [stage]
-  (match (. stage 1)
-    :tween (convert-timeline-stage-tween stage)
-    :wait (convert-timeline-stage-wait stage)))
+  (if stage.__timeline
+    stage
+    (match (. stage 1)
+      :tween (convert-timeline-stage-tween stage)
+      :wait (convert-timeline-stage-wait stage))))
 
 (fn convert-timeline-stages [stages]
   (icollect [ix stg (ipairs stages)]
-   (do
-     (if (= (type stg) "table") ; TODO: figure out why `sequence?` is undefined
-         (convert-timeline-stage stg)
-         {:type :funcall
-          :reset #nil
-          :update (fn [self dt]
-                   (stg self dt)
-                   nil)}))))
+   (let [stg-type (type stg)]
+     (match stg-type
+        :table (convert-timeline-stage stg)
+        :function {:__timeline true 
+                   :type :funcall
+                   :reset #(set ($1.timeline $1.result)
+                                (values nil nil))
+                   :update (fn [self dt]
+                             (when (not self.result)
+                               (set self.result (stg self dt))
+                               (when (and self.result self.result.__timeline) 
+                                 (set self.timeline self.result)
+                                 (self.timeline:reset)))
+                             (if self.timeline (self.timeline:update dt) nil))}))))
+         
+                   
 
-(local Timeline {})
+(local Timeline {:__timeline true})
 (set Timeline.__index Timeline)
 
 (fn Timeline.destroy! [self]
@@ -97,14 +109,16 @@
                         (< $1.iteration $1.times))
                    :iteration 1
                    :times times
-                   :type :timeline}
+                   :type :timeline
+                   :__timeline true}
                   RepeatTimeline)))
 
 (fn t-while [...]
   (let [input [...]
         [f & rest] input
         stages (convert-timeline-stages rest rest)]
-    (setmetatable {:ix 1
+    (setmetatable {:__timeline true
+                   :ix 1
                    :stages stages
                    :can-continue? #(f $1.scene)
                    :iteration 1
@@ -113,7 +127,8 @@
 
 (fn timeline [...]
   (let [stages (convert-timeline-stages [...])]
-    (setmetatable {:ix 1
+    (setmetatable {:__timeline true 
+                   :ix 1
                    :stages stages
                    :type :timeline}
                   Timeline)))
