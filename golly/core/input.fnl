@@ -10,9 +10,10 @@
 (fn pressed? [player key]
   (?. (?. keystates player) key))
 
-(fn kbd-movement []
- (vec (if (love.keyboard.isDown "a") -1 (love.keyboard.isDown "d") 1 0)
-      (if (love.keyboard.isDown "w") -1 (love.keyboard.isDown "s") 1 0)))
+(fn kbd-movement [player]
+ (let [ix (or player 1)]
+   (vec (if (pressed? ix :left) -1 (pressed? ix :right) 1 0)
+        (if (pressed? ix :up) -1 (pressed? ix :down) 1 0))))
 
 (fn movement [joystick-num?]
  (let [joystick (. joysticks (or joystick-num? 1))]

@@ -4,5 +4,6 @@
  :scene (require :golly.core.scene)
  :systems (require :golly.core.systems)
  :input (require :golly.core.input)
- :redux (require :golly.core.redux)}
+ :redux (require :golly.core.redux)
+ :class (require :golly.core.class)}
 

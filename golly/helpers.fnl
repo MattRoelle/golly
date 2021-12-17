@@ -1,5 +1,4 @@
 (local game (require :golly.core.game))
-(local gizmo (require :golly.gizmo))
 (local lume (require :lib.lume))
 (local tween (require :lib.tween))
 (local inspect (require :lib.inspect))
@@ -34,24 +33,6 @@
 (fn rotate-about-origin [x y theta]
  [(- (* x (math.cos theta))) (* y (math.sin theta))
   (- (* x (math.sin theta))) (* y (math.cos theta))])
-
-(fn entities-in-front-of [self offset gap w h step filter]
- (let [hits []]
-  (for [i 0 w step]
-   (let [r (+ gap i)
-         theta (+ self.angle offset)
-         originx (+ self.x (* r (math.cos theta)))
-         originy (+ self.y (* r (math.sin theta)))
-         x1 (+ originx (* h (math.cos (+ (/ math.pi 2) theta))))
-         y1 (+ originy (* h (math.sin (+ (/ math.pi 2) theta))))
-         x2 (- originx (* h (math.cos (+ (/ math.pi 2) theta))))
-         y2 (- originy (* h (math.sin (+ (/ math.pi 2) theta))))]
-    (gizmo { :x x1 :y y1 :x2 x2 :y2 y2 :shape :line})
-    (let [result (game.scene.bump-world:querySegment x1 y1 x2 y2 filter)]
-     (each [ix hit (ipairs result)]
-      (when (not (lume.match hits #(= $1.id hit.id)))
-       (table.insert hits hit))))))
-  hits))
 
 (fn lerp [a b t]
  (+ (* a (- 1 t)) (* b t)))
@@ -95,7 +76,6 @@
   : distance-tween
   : move-towards
   : rotate-about-origin
-  : entities-in-front-of
   : lerp
   : lerpto
   : lerpangle

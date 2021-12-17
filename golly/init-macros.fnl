@@ -137,7 +137,7 @@
                    ,(unpack state-handler-body)))
                ,(tostring ename))))
     (do ,(unpack result-body))
-    ((. (require :golly) :statemachine)
+    ((require :golly.statemachine)
      ,initial-state {:transitions transitions# 
                      :states states#
                      :callbacks callbacks#})))
@@ -228,7 +228,9 @@
   (let [proparg (. arglist 1)]
     `(fn ,name ,arglist
        (var ,self nil)
-       (set ,self ((. (require :golly.core.entity) :new-entity) (or ,proparg {})))
+       (set ,self ((. (require :golly.core.class) :new-class) (or ,proparg {})))
+       ; TODO: Separate this line from the regular class mixins so that not all classes have to be game entities
+       ((. (require :golly.core.entity) :mixin-base-entity) ,self)
        (tset ,self :__name ,(tostring name))
        (do 
          ,(unpack 

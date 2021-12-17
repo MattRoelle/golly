@@ -3,17 +3,13 @@
 (local helpers (require :golly.helpers))
 (local timeline (require :golly.timeline))
 (local gollymath (require :golly.math))
+(local class (require :golly.core.class))
 
 (local Entity {:prototype {}})
-
-(local Handler {})
-(set Handler.__index Handler)
-
-(fn Handler.__call [self ...]
-  (self.f ...))
-
-(fn Handler.__tostring [self]
-  (or self.name "anonymous"))
+(fn Entity.__index [self k]
+  (if (. Entity.prototype k)
+      (. Entity.prototype k)
+      (class.Class.__index self k)))
 
 (fn Entity.prototype.tagged? [self tag]
   (lume.find self.tags tag))
@@ -29,13 +25,6 @@
 (fn Entity.prototype.lerpto! [self v t]
   (self.position:lerp! v t))
 
-(fn Entity.prototype.on [self evtype handler handler-name?]
-  (tset self._handlers evtype (or (. self._handlers evtype) []))
-  ;(print "handler" self.__name evtype handler handler-name?)
-  (table.insert (. self._handlers evtype)
-                (setmetatable {:f handler
-                               :name handler-name?}
-                              Handler)))
 
 (fn Entity.prototype.destroy! [self]
   (when self.destroyed (lua :return))
@@ -104,32 +93,21 @@
         bottom (+ top self.size.y)]
     (set self.bounds {: left : top : right : bottom})))
 
-(fn Entity.__index [self k b]
-  (if (. Entity.prototype k)
-    (. Entity.prototype k)
-    (let [handlers (. self._handlers k)]
-      (when handlers
-        (fn [self ...]
-          (when (and self.destroyed (not= k :destroy))
-            (lua "return"))
-          (each [_ h (ipairs handlers)]
-            (let [(result err) (pcall h ...)]
-              (when (not result) 
-                (error (.. "(class=" (or self.__name "anonymous") ", mixin=" (tostring h) ", event=" k ", args= " (inspect ... {:depth 1}) "): " err))))))))))
+(local base-entity
+ {:position (gollymath.vector.vec 0 0)
+  :scale (gollymath.vector.vec 1 1)
+  :pivot (gollymath.vector.vec 0.5 0.5)
+  :size (gollymath.vector.vec 0 0)
+  :angle 0
+  :parent nil
+  :z-index 0
+  :__collides-with []
+  :__timelines {}})
 
-(fn new-entity [props]
-  (let [obj (lume.merge {:position (gollymath.vector.vec 0 0)
-                         :scale (gollymath.vector.vec 1 1)
-                         :pivot (gollymath.vector.vec 0.5 0.5)
-                         :size (gollymath.vector.vec 0 0)
-                         :angle 0
-                         :parent nil
-                         :z-index 0
-                         :id (helpers.uuid)
-                         :__collides-with []
-                         :_handlers {}
-                         :__timelines {}}
-                    (or props {}))]
-    (setmetatable obj Entity)))
+(fn mixin-base-entity [self props]
+  (each [k v (pairs base-entity)]
+    (tset self k (or (. self k) v)))
+  (setmetatable self Entity))
 
-{: new-entity}
+{: mixin-base-entity
+ : Entity}
