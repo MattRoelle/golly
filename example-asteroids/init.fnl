@@ -92,7 +92,6 @@
                                                                         (love.math.random 50 110))}))))))
 
 (class player [self props]
-  (print "got here player")
   (tags :player)
   (set self.points [-5 5 -5 -5 9 0])
   (mixins (box2d-shape-fill {:color [0 1 1 1]}) 
