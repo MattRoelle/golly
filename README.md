@@ -49,7 +49,7 @@ The example game is a basic asteroids implementation, but it shows off all the m
       p (penguin)]
   (a:greet)
   (p:greet))
-```fnl
+```
 
 The above script gives the following output.
 
