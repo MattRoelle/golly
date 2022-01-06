@@ -1,7 +1,9 @@
 (local vector (require :golly.math.vector))
+(local aabb (require :golly.math.aabb))
 
 {:path (require :golly.math.path)
  :vector vector 
+ :aabb aabb
  :constants {:tau (* math.pi 2)
              :angleright 0 
              :angleleft math.pi 

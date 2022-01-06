@@ -3,13 +3,13 @@
 (local golly (require :golly))
 (local bit (require :bit))
 
-(local stage-width 640)
-(local stage-height 360)
+(local box2d-layers {:wall 1 :player 2 :asteroid 4 :bullet 8 :powerup 16})
+
+(local stage-width (love.graphics.getWidth))
+(local stage-height (love.graphics.getHeight))
+
 (local stage-center-x (/ stage-width 2))
 (local stage-center-y (/ stage-height 2))
-
-(local box2d-layers 
-  {:wall 1 :player 2 :asteroid 4 :bullet 8 :powerup 16})
 
 ;; `mixin` macro creates a function that adds fields to the self table.
 ;; `on` macro is equivalent to (self:on :draw (fn [] ...))
@@ -56,7 +56,7 @@
   (self:collides-with! :asteroid)
   (on :collision-begin-contact [other coll]
     (when (other:tagged? :asteroid)
-      (self.scene:shake 0.3 7)
+      ;(self.scene:shake 0.3 7)
       (self:destroy!)
       (other:destroy!))))
    
@@ -81,8 +81,8 @@
                                                                box2d-layers.bullet) 0]})
           (destroy-out-of-bounds))
   (on :draw []
-    (with-color 1 1 1 1
-      (love.graphics.polygon :fill (unpack self.points))))
+    (love.graphics.setColor 1 1 1 1)
+    (love.graphics.polygon :fill (unpack self.points)))
   (on :destroy []
     (when (> self.r 15)
       (for [i 1 2]
@@ -94,7 +94,7 @@
 (class player [self props]
   (tags :player)
   (set self.points [-5 5 -5 -5 9 0])
-  (mixins (box2d-shape-fill {:color [0 1 1 1]}) 
+  (mixins (box2d-shape-fill {:color [1 0 1 1]}) 
           (golly.mixins.box2d {:body-type :dynamic 
                                :shape-type :polygon
                                :linear-damping 2
@@ -138,25 +138,25 @@
   (mixins (golly.mixins.box2d {:body-type :kinematic 
                                :shape-type :rectangle})))
 
-(class starfield [self props]
-  (set self.ps
-     (let [ps (love.graphics.newParticleSystem (. (golly.game.get-game) :assets :circle))]
-        (ps:setParticleLifetime 2 4)
-        (ps:setSpread 100)
-        (ps:setEmissionArea :normal stage-width stage-height)
-        (ps:setSizes 0.02 0.02 0)
-        (ps:setSpeed 10 20)
-        (ps:setDirection 10 10)
-        (ps:setEmissionRate 100)
-        (ps:start)
-        ps))
-  (on :update [dt] (self.ps:update dt))
-  (on :draw [] (love.graphics.draw self.ps)))
+; (class starfield [self props]
+;   (set self.ps
+;      (let [ps (love.graphics.newParticleSystem (. (golly.game.get-game) :assets :circle))]
+;         (ps:setParticleLifetime 2 4)
+;         (ps:setSpread 100)
+;         (ps:setEmissionArea :normal stage-width stage-height)
+;         (ps:setSizes 0.02 0.02 0)
+;         (ps:setSpeed 10 20)
+;         (ps:setDirection 10 10)
+;         (ps:setEmissionRate 100)
+;         (ps:start)
+;         ps))
+;   (on :update [dt] (self.ps:update dt))
+;   (on :draw [] (love.graphics.draw self.ps)))
 
 (class director [self props]
   (on :init [] 
       (self:add-children
-        (starfield)
+        ; (starfield)
         (player {:position (vec stage-center-x stage-center-y)})
         (wall {:position (vec stage-center-x -25) :size (vec stage-width 50)})
         (wall {:position (vec stage-center-x (+ stage-height 25)) :size (vec stage-width 50)})
@@ -188,12 +188,9 @@
 (fn main [scene]
   ; This scales the frame size up to the window size and handles black bars etc
   ; Thinking about scene middleware using functional composition and threading macros. ->
-  (golly.scene.draw-game-frame scene)
   (scene:add-entity (director))
   scene)
 
-(golly.set-game {: main
-                 : stage-width 
-                 : stage-height
-                 :assets {:circle (love.graphics.newImage "example-assets/circle.png")}})
+(golly.boot {: main})
+
 

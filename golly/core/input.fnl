@@ -1,7 +1,6 @@
 (require-macros :golly)
 
 (local beholder (require :lib.beholder))
-(local game (require :golly.core.game))
 (local gollymath (require :golly.math))
 
 (var joysticks [])
@@ -91,6 +90,8 @@
    :w (set-keystate 1 :up true)
    :a (set-keystate 1 :left true)
    :d (set-keystate 1 :right true)
+   :q (set-keystate 1 :lshoulder true)
+   :e (set-keystate 1 :rshoulder true)
    :space (set-keystate 1 :a true)
    :f (set-keystate 1 :b true)))
 
@@ -105,7 +106,9 @@
    :a (set-keystate 1 :left false)
    :d (set-keystate 1 :right false)
    :space (set-keystate 1 :a false)
-   :f (set-keystate 1 :b false)))
+   :f (set-keystate 1 :b false)
+   :q (set-keystate 1 :lshoulder false)
+   :e (set-keystate 1 :rshoulder false)))
 
 (fn mousepressed [x y btn istouch press]
   (beholder.trigger :input 1 :mousepress btn))
@@ -115,9 +118,10 @@
 
 (fn mouse-position []
   (let [(x y) (love.mouse.getPosition)]
-    (gollymath.vector.vec
-      (/ x (/ (love.graphics.getWidth) game.stage-width))
-      (/ y (/ (love.graphics.getHeight) game.stage-height)))))
+    (gollymath.vector.vec x y))) 
+
+(fn wheelmoved [x y]
+  (beholder.trigger :input 1 :wheelmove x y))
 
 {: sync-joysticks
  : movement
@@ -132,4 +136,5 @@
  : keyreleased
  : update 
  : pressed?
- : mouse-position}
+ : mouse-position
+ : wheelmoved}

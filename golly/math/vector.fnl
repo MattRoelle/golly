@@ -57,10 +57,10 @@
 (fn Vector2D.distance-to [a b]
   (math.sqrt (+ (^ (- a.x b.x) 2) (^ (- a.y b.y) 2))))
 
-(fn Vector2D.angle-to [a b]
+(fn Vector2D.angle-from [a b]
   (math.atan2 (- a.y b.y) (- a.x b.x)))
 
-(fn Vector2D.angle-from [a b]
+(fn Vector2D.angle-to [a b]
   (math.atan2 (- b.y a.y) (- b.x a.x)))
 
 (fn Vector2D.angle [self]
@@ -108,7 +108,7 @@
          (values (* (math.cos theta) len)
               (* (math.sin theta) len)))))
 
-(fn Vector2D.magsq [self]
+(fn Vector2D.lengthsq [self]
   (+ (^ self.x 2) (^ self.y 2)))
 
 (fn Vector2D.normalize [self]
@@ -130,7 +130,8 @@
   (let [magsq (self:lengthsq)
         theta (self:angle)]
     (if (> magsq (^ max 2))
-      (polar-vec2 theta max))))
+      (polar-vec2 theta max)
+      self)))
 
 (fn Vector2D.limit! [self max]
   (let [magsq (self:lengthsq)
@@ -150,5 +151,49 @@
        (values (+ (* a.x (- 1 t)) (* b.x t))
                (+ (* a.y (- 1 t)) (* b.y t)))))
 
+(fn Vector2D.midpoint [a b]
+  (/ (+ a b) 2))
+
+(local Line {})
+(set Line.__index Line)
+
+(fn line [start end]
+  (setmetatable {: start : end} Line))
+
+(fn Line.__tostring [self]
+  (.. "(" self.start.x ", " self.start.y ") (" self.end.x ", " self.end.y ")"))
+
+(fn Line.midpoint [self]
+  (self.start:midpoint self.end))
+
+(fn Line.cut [self v w]
+  (let [cut-center (self.start:lerp self.end v)
+        cut (polar-vec2 (self.start:angle-from cut-center) w)
+        newend (- cut-center (/ cut 2))
+        newstart (+ cut-center (/ cut 2))]
+    [(line self.start newend)
+     (line newstart self.end)]))
+
+(fn Line.__eq [a b]
+  (or (and (= a.start b.start) (= a.end b.end))
+      (and (= a.end b.start) (= a.start b.end))))
+
+(local Rect {})
+(set Rect.__index Rect)
+
+(fn rect [position size]
+  (setmetatable {: position : size} Rect))
+
+(fn Rect.left-mid [self] (vec (+ self.position (vec (* -0.5 self.size.x) 0))))
+(fn Rect.top-left [self] (vec (+ self.position (vec (* -0.5 self.size.x) (* -0.5 self.size.y)))))
+(fn Rect.top-mid [self] (vec (+ self.position (vec 0 (* -0.5 self.size.y)))))
+(fn Rect.top-right [self] (vec (+ self.position (vec (* 0.5 self.size.x) (* -0.5 self.size.y)))))
+(fn Rect.right-mid [self] (vec (+ self.position (vec (* 0.5 self.size.x) 0))))
+(fn Rect.bottom-right [self] (vec (+ self.position (vec (* 0.5 self.size.x) (* 0.5 self.size.y)))))
+(fn Rect.bottom-mid [self] (vec (+ self.position (vec 0 (* 0.5 self.size.y)))))
+(fn Rect.bottom-left [self] (vec (+ self.position (vec (* -0.5 self.size.x) (* 0.5 self.size.y)))))
+
 {: vec 
+ : line
+ : rect
  : polar-vec2}

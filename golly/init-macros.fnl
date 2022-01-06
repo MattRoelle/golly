@@ -2,7 +2,12 @@
 (fn -= [x n] `(set ,x (- ,x ,n)))
 (fn *= [x n] `(set ,x (* ,x ,n)))
 (fn /= [x n] `(set ,x (/ ,x ,n)))
+(fn rgba [k] `((. (require :golly.graphics.color) :rgba) ,k))
+(fn hexcolor [k] `((. (require :golly.graphics.color) :hexcolor) ,k))
+(fn asset [k] `((. (require :golly.assets) :asset) ,k))
 (fn vec [...] `((. (require :golly.math.vector) :vec) ,...))
+(fn aabb [...] `((. (require :golly.math.aabb) :aabb) ,...))
+(fn line [...] `((. (require :golly.math.vector) :line) ,...))
 (fn polar-vec2 [...] `((. (require :golly.math.vector) :polar-vec2) ,...))
 (fn lerp [...] `((. (require :golly.helpers) :lerp) ,...))
 (fn lerpangle [...] `((. (require :golly.helpers) :lerpangle) ,...))
@@ -145,46 +150,39 @@
 (fn with-shader [shader ...]
   `(do
     (love.graphics.setShader ,shader)
-    ,[...]
+    (do ,...)
     (love.graphics.setShader)))
-
-(fn with-color [r g b a ...]
-  `(do
-    (let [(_r# _g# _b# _a#) (love.graphics.getColor)]
-      (love.graphics.setColor ,r ,g ,b ,a)
-      ,[...]
-      (love.graphics.setColor _r# _g# _b# _a#))))
 
 (fn with-stencil [[stencilfn action value keepvalues] ...]
   `(do
     (love.graphics.stencil ,stencilfn ,action ,value ,keepvalues)
-    (do ,[...])
+    (do ,...)
     (love.graphics.stencil)))
 
 (fn with-blend-mode [mode ...]
  `(let [old# (love.graphics.getBlendMode)]
     (love.graphics.setBlendMode ,mode)
-    ,[...]
+    (do ,...)
     (love.graphics.setBlendMode old#)))
 
 (fn with-transform-push [...]
   `(do
     (love.graphics.push)
-    ,[...]
+    (do ,...)
     (love.graphics.pop)))
 
 (fn with-origin [...]
   `(do
     (love.graphics.push)
     (love.graphics.origin)
-    ,[...]
+    (do ,...)
     (love.graphics.pop)))
 
 (fn with-canvas [canvas ...]
  `(let [old# (love.graphics.getCanvas)]
 
-    ;(love.graphics.setCanvas ,canvas)
-    ,[...]
+    (love.graphics.setCanvas ,canvas)
+    (do ,...)
     (love.graphics.setCanvas old#)))
 
 (fn entity-expr [self name expr]
@@ -262,10 +260,33 @@
             :on-remove `(tset ,self :onRemove ,bodyfn)
             true (error (.. "Invalid child form of def-system: " op ". Options are filter, process, pre-process, post-process, sort, on-add, on-remove")))))
      (let [ctor#
-           (if (. ,self :sort)
+           (if (. ,self :compare)
                (. (require :lib.tiny) :sortedProcessingSystem)
                (. (require :lib.tiny) :processingSystem))]
        (ctor# ,self)))))
+
+(fn fill-rectangle [pos size]
+  `(love.graphics.rectangle :fill
+                            (. ,pos :x) (. ,pos :y)
+                            (. ,size :x) (. ,size :y)))
+(fn fill-rect [pos size] (fill-rectangle pos size))
+
+(fn stroke-rectangle [pos size]
+  `(love.graphics.rectangle :line
+                            (. ,pos :x) (. ,pos :y)
+                            (. ,size :x) (. ,size :y)))
+
+(fn with-color [input ...]
+ `(do
+   (let [[r# g# b# a#] ,input
+         (_r# _g# _b# _a#) (love.graphics.getColor)]
+    (love.graphics.setColor r# g# b# a#)
+    (do ,...)
+    (love.graphics.setColor _r# _g# _b# _a#))))
+
+(fn set-color [c]
+  `(let [[r# g# b# a#] (: ,c :serialize)]
+     (love.graphics.setColor r# g# b# a#)))
 
 {: with-stencil
  : with-shader
@@ -274,17 +295,26 @@
  : with-transform-push
  : with-blend-mode
  : with-canvas
+ : fill-rect
+ : fill-rectangle
+ : stroke-rectangle
  : def-system
  : class
  : mixin
  : statemachine
+ : rgba
+ : hexcolor
  : +=
  : -=
  : *=
  : /=
+ : line
+ : aabb
  : vec
  : polar-vec2
  : lerp 
  : lerpangle 
  : lerpto 
- : lerptoangle}
+ : lerptoangle
+ : asset
+ : set-color}

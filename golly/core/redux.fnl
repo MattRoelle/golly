@@ -15,17 +15,26 @@
   (tset self.__subscribers id nil))
 
 (fn Store.dispatch [self ...]
+  (when self.mutex
+    (table.insert self.__dispatch-queue [...])
+    (lua :return))
+  (set self.mutex true)
   (let [new-state (self.__reducer self.__state ...)]
     (set self.__state new-state)
     (each [_ sub (ipairs self.__subscribers)]
-      (sub new-state))))
+      (sub new-state)))
+  (set self.mutex false)
+  (while (> (length self.__dispatch-queue) 0)
+    (self:dispatch (unpack (table.remove self.__dispatch-queue 1)))))
 
 (fn Store.get-state [self] self.__state)
   
 (fn create-store [reducer]
   (setmetatable {:__subscribers {}
                  :__state (reducer nil nil)
-                 :__reducer reducer} Store))
+                 :__reducer reducer
+                 :__dispatch-queue []}
+    Store))
 
 (mixin use-state [self store evname p?]
   (on :init []

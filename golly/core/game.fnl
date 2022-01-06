@@ -1,19 +1,11 @@
-(local module {})
+(local scene (require :golly.core.scene))
 
-(var __game {})
-(fn module.get-game []
-  __game)
+(var __scene nil)
+(fn get-active-scene [] __scene)
 
-(fn module.set-scene [s]
-  (set __game.scene s))
+(fn load-scene [options]
+  (set __scene (scene.create-scene options))
+  (options.main __scene))
 
-(macro assert-field [g fname]
-  `(assert (. ,g ,fname) (.. "Must pass " ,fname)))
-
-(fn module.set-game [g]
-  (assert-field g :main)
-  (assert-field g :stage-width)
-  (assert-field g :stage-height)
-  (set __game g))
-
-module
+{: get-active-scene
+ : load-scene} 

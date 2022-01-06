@@ -15,6 +15,9 @@
     (when transition
       (self:transition transition ...))))
 
+(fn StateMachine.prototype.add-callback! [self t state f]
+  (table.insert (. (. self.__callbacks t) state) f))
+
 (fn StateMachine.__index [self k]
   (if (. StateMachine.prototype k)
       (. StateMachine.prototype k)
@@ -27,14 +30,15 @@
 
 (fn StateMachine.prototype.transition [self to ...]
   (when (= self.current to) (lua :return))
-  (set self.current to)
-  (let [exit-callbacks  (. self.__callbacks.on-exit self.current)
-        enter-callbacks (. self.__callbacks.on-enter to)]
-    (each [_ cb (ipairs (or exit-callbacks []))] (cb ...))
-    (each [_ cb (ipairs (or enter-callbacks []))] (cb ...))))
-  ; (each [k v (pairs (or (. self.__states to) {}))]
-  ;   (print k (inspect v))
-  ;   (tset self k v))
+  (let [previous self.current]
+    (set self.current to)
+    (let [exit-callbacks  (. self.__callbacks.on-exit previous)
+          enter-callbacks (. self.__callbacks.on-enter to)]
+      (each [_ cb (ipairs (or exit-callbacks []))] (cb ...))
+      (each [_ cb (ipairs (or enter-callbacks []))] (cb ...)))))
+    ; (each [k v (pairs (or (. self.__states to) {}))]
+    ;   (print k (inspect v))
+    ;   (tset self k v))
 
 (fn create-statemachine [initial-state props]
   (assert props.transitions "Must pass transitions to the state machine")
@@ -47,7 +51,7 @@
         (tset (. transitions from-k) name to)))
     (let [sm (setmetatable
               {:__transitions transitions
-               :__callbacks (or props.callbacks {})
+               :__callbacks (or props.callbacks {:on-enter {} :on-exit {}})
                :__states (or props.states {})
                :current initial-state}
               StateMachine)]

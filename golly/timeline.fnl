@@ -82,18 +82,20 @@
 (fn Timeline.next-stage [self]
   (set self.ix (+ self.ix 1)))
 
-(local RepeatTimeline {:update Timeline.update
-                       :reset Timeline.reset})
+(local RepeatTimeline {:update Timeline.update})
 (set RepeatTimeline.__index RepeatTimeline)
+
+(fn RepeatTimeline.reset [self]
+  (set self.ix 1)
+  (set self.iteration (+ self.iteration 1))
+  (each [_ stg (ipairs self.stages)]
+    (stg:reset)))
 
 (fn RepeatTimeline.next-stage [self]
   (set self.ix (+ self.ix 1))
   (when (and (self:can-continue?)
              (> self.ix (length self.stages)))
-    (set self.ix 1)
-    (set self.iteration (+ self.iteration 1))
-    (each [_ stg (ipairs self.stages)]
-      (stg:reset))))
+    (self:reset)))
 
 (fn repeat [...]
   (let [input [...]
@@ -116,14 +118,17 @@
 (fn t-while [...]
   (let [input [...]
         [f & rest] input
-        stages (convert-timeline-stages rest rest)]
-    (setmetatable {:__timeline true
-                   :ix 1
-                   :stages stages
-                   :can-continue? #(f $1.scene)
-                   :iteration 1
-                   :type :timeline}
-                  RepeatTimeline)))
+        stages (convert-timeline-stages rest rest)
+        tl (setmetatable {:__timeline true
+                          :ix (length stages)
+                          :stages stages
+                          :can-continue? #(f $1.scene)
+                          :iteration 1
+                          :type :timeline}
+                         RepeatTimeline)]
+    (tl:next-stage)
+    tl))
+
 
 (fn timeline [...]
   (let [stages (convert-timeline-stages [...])]
