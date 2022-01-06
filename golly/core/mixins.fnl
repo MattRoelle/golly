@@ -1,7 +1,6 @@
 (local game (require :golly.core.game))
 (local helpers (require :golly.helpers))
 (local input (require :golly.core.input))
-(local beholder (require :lib.beholder))
 (local graphics (require :golly.graphics))
 (local assets (require :golly.assets))
 
@@ -104,13 +103,6 @@
                                                           (: self k $1)))}
                                        props))))
 
-(mixin m-input [self ...]
-  (set self.__inputsub
-       (beholder.observe :input ...
-                         #(self:input $...)))
-  (on :destroy []
-      (beholder.stopObserving self.__inputsub)))
-
 (mixin mouse-interaction [self props]
   (statemachine :mouse-interaction-state :idle
     (transitions 
@@ -121,12 +113,12 @@
       (on-exit [] (when self.mouseout (self:mouseout)))))
 
   (set self.inputsub
-       (beholder.observe :input 1 :mousepress
-                         (fn [btn]
-                           (when (and self.mousepress
-                                      (= self.mouse-interaction-state.current :hovered))
-                             (self:mousepress)))))
-  (on :destroy [] (beholder.stopObserving self.inputsub))
+       (input.input-events:subscribe 
+         (fn [btn]
+           (when (= btn :mousepress)
+             (when (and self.mousepress (= self.mouse-interaction-state.current :hovered))
+               (self:mousepress))))))
+  (on :destroy [] (input.input-events:unsubscribe self.inputsub))
   (on :drawdebug []
    (love.graphics.setColor 0 1 0 1)
    (love.graphics.rectangle :line 0 0 self.size.x self.size.y)
@@ -155,5 +147,4 @@
 
 {: box2d
  : timer
- : mouse-interaction
- :input m-input}
+ : mouse-interaction}

@@ -1,8 +1,9 @@
 (require-macros :golly)
 
-(local beholder (require :lib.beholder))
+(local event-bus (require :golly.core.event-bus))
 (local gollymath (require :golly.math))
 
+(local input-events (event-bus))
 (var joysticks [])
 (var keystates [{} {} {} {}])
 
@@ -41,7 +42,7 @@
  (pp joysticks))
   
 (fn set-keystate [player key v]
-  (when v (beholder.trigger :input player key))
+  (when v (input-events:dispatch key))
   (tset keystates player (lume.merge (. keystates player) { key v})))
 
 (fn update []
@@ -53,20 +54,20 @@
 
 (fn joystickpressed [joystick key]
   (match key
-    6 (beholder.trigger :input 1 :rshoulder)
-    5 (beholder.trigger :input 1 :lshoulder)))
+    6 (input-events:dispatch :rshoulder)
+    5 (input-events:dispatch :lshoulder)))
 
 (fn gamepadpressed [joystick key]
   (match key
-   :dpdown (set-keystate 1 :down true)
-   :dpup (set-keystate 1 :up true)
-   :dpleft (set-keystate 1 :left true)
-   :dpright (set-keystate 1 :right true)
-   :a (set-keystate 1 :a true)
-   :b (set-keystate 1 :b true)
-   :x (set-keystate 1 :x true)
-   :y (set-keystate 1 :y true)
-   :start (set-keystate 1 :start true)))
+   :dpdown (set-keystate :down true)
+   :dpup (set-keystate :up true)
+   :dpleft (set-keystate :left true)
+   :dpright (set-keystate :right true)
+   :a (set-keystate :a true)
+   :b (set-keystate :b true)
+   :x (set-keystate :x true)
+   :y (set-keystate :y true)
+   :start (set-keystate :start true)))
 
 (fn gamepadreleased [joystick key]
   (match key
@@ -111,17 +112,17 @@
    :e (set-keystate 1 :rshoulder false)))
 
 (fn mousepressed [x y btn istouch press]
-  (beholder.trigger :input 1 :mousepress btn))
+  (input-events:dispatch :mousepress btn))
 
 (fn mousereleased [x y btn istouch press]
-  (beholder.trigger :input 1 :mousereleased btn))
+  (input-events:dispatch :mousereleased btn))
 
 (fn mouse-position []
   (let [(x y) (love.mouse.getPosition)]
     (gollymath.vector.vec x y))) 
 
 (fn wheelmoved [x y]
-  (beholder.trigger :input 1 :wheelmove x y))
+  (input-events:dispatch :wheelmove x y))
 
 {: sync-joysticks
  : movement
@@ -137,4 +138,5 @@
  : update 
  : pressed?
  : mouse-position
- : wheelmoved}
+ : wheelmoved
+ : input-events}
