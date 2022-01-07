@@ -178,22 +178,6 @@
   (or (and (= a.start b.start) (= a.end b.end))
       (and (= a.end b.start) (= a.start b.end))))
 
-(local Rect {})
-(set Rect.__index Rect)
-
-(fn rect [position size]
-  (setmetatable {: position : size} Rect))
-
-(fn Rect.left-mid [self] (vec (+ self.position (vec (* -0.5 self.size.x) 0))))
-(fn Rect.top-left [self] (vec (+ self.position (vec (* -0.5 self.size.x) (* -0.5 self.size.y)))))
-(fn Rect.top-mid [self] (vec (+ self.position (vec 0 (* -0.5 self.size.y)))))
-(fn Rect.top-right [self] (vec (+ self.position (vec (* 0.5 self.size.x) (* -0.5 self.size.y)))))
-(fn Rect.right-mid [self] (vec (+ self.position (vec (* 0.5 self.size.x) 0))))
-(fn Rect.bottom-right [self] (vec (+ self.position (vec (* 0.5 self.size.x) (* 0.5 self.size.y)))))
-(fn Rect.bottom-mid [self] (vec (+ self.position (vec 0 (* 0.5 self.size.y)))))
-(fn Rect.bottom-left [self] (vec (+ self.position (vec (* -0.5 self.size.x) (* 0.5 self.size.y)))))
-
 {: vec 
  : line
- : rect
  : polar-vec2}

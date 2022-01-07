@@ -1,0 +1,28 @@
+;; -*- mode: fennel; -*- vi:ft=fennel
+;; Configuration file for Fenneldoc v0.1.8
+;; https://gitlab.com/andreyorst/fenneldoc
+
+{:fennel-path ["golly/?.fnl"]
+ :function-signatures true
+ :ignored-args-patterns ["%.%.%."]
+ :inline-references "link"
+ :insert-comment true
+ :insert-copyright true
+ :insert-license true
+ :insert-version true
+ :keys {:copyright "_COPYRIGHT"
+        :description "_DESCRIPTION"
+        :doc-order "_DOC_ORDER"
+        :license "_LICENSE"
+        :module-name "_MODULE_NAME"
+        :version "_VERSION"}
+ :mode "checkdoc"
+ :order "alphabetic"
+ :out-dir "./doc"
+ :project-copyright "Copyright (C) 2020-2021 Matthew Roelle"
+ :project-doc-order {:src/markdown.fnl ["gen-markdown" "gen-function-signature"]}
+ :project-license "[MIT](https://github.com/MattRoelle/golly/blob/master/LICENSE.txt)"
+ :project-version "v0.0.0"
+ :sandbox true
+ :test-requirements {}
+ :toc true}
