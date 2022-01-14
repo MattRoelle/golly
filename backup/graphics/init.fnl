@@ -1,5 +1,3 @@
-(require-macros :golly)
-
 (fn dashed-line [p1 p2 dash-size gap-size line-width]
   (when line-width (love.graphics.setLineWidth line-width))
   (local (dx dy) (values (- p2.x p1.x) (- p2.y p1.y)))
@@ -24,17 +22,6 @@
                        (+ (or offset.x 0) (/ (font:get_text_width text) 2))
                        (+ (or offset.y 0) (/ font.h 2))))
 
-(fn print-centered-dropshadow [text font position r scale offset]
-  (with-transform-push
-    (love.graphics.translate -2 2)
-    (with-color [0 0 0 1]
-      (love.graphics.print text font.font position.x position.y (or r 0) (or scale.x 1) (or scale.y 1)
-                           (+ (or offset.x 0) (/ (font:get_text_width text) 2))
-                           (+ (or offset.y 0) (/ font.h 2)))))
-  (love.graphics.print text font.font position.x position.y (or r 0) (or scale.x 1) (or scale.y 1)
-                       (+ (or offset.x 0) (/ (font:get_text_width text) 2))
-                       (+ (or offset.y 0) (/ font.h 2))))
-
 (fn draw-triangle [x y w h]
   (love.graphics.polygon :fill 
                          (vec 0 (- (/ h 2)))
@@ -44,6 +31,5 @@
 {: dashed-line
  : dashed-rectangle
  : print-centered
- : print-centered-dropshadow
  : draw-triangle
  :animation (require :golly.graphics.animation)}

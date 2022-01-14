@@ -154,6 +154,29 @@
 (fn Vector2D.midpoint [a b]
   (/ (+ a b) 2))
 
+(local Line {})
+(set Line.__index Line)
+
+(fn line [start end]
+  (setmetatable {: start : end} Line))
+
+(fn Line.__tostring [self]
+  (.. "(" self.start.x ", " self.start.y ") (" self.end.x ", " self.end.y ")"))
+
+(fn Line.midpoint [self]
+  (self.start:midpoint self.end))
+
+(fn Line.cut [self v w]
+  (let [cut-center (self.start:lerp self.end v)
+        cut (polar-vec2 (self.start:angle-from cut-center) w)
+        newend (- cut-center (/ cut 2))
+        newstart (+ cut-center (/ cut 2))]
+    [(line self.start newend)
+     (line newstart self.end)]))
+
+(fn Line.__eq [a b]
+  (or (and (= a.start b.start) (= a.end b.end))
+      (and (= a.end b.start) (= a.start b.end))))
 
 {: vec 
  : line

@@ -19,7 +19,7 @@ package.preload["fennel.repl"] = package.preload["fennel.repl"] or function(...)
     return (input and (input .. "\n"))
   end
   local function default_on_values(xs)
-    io.write(table.concat(xs, "\t"))
+    io.write(table.concat(xs, "\9"))
     return io.write("\n")
   end
   local function default_on_error(errtype, err, lua_source)
@@ -363,7 +363,7 @@ package.preload["fennel.repl"] = package.preload["fennel.repl"] or function(...)
           _571_ = _572_
         end
       end
-      if ((_G.type(_571_) == "table") and (nil ~= (_571_).short_src) and (nil ~= (_571_).linedefined) and (nil ~= (_571_).source) and ((_571_).what == "Lua")) then
+      if ((_G.type(_571_) == "table") and (nil ~= (_571_).short_src) and (nil ~= (_571_).linedefined) and ((_571_).what == "Lua") and (nil ~= (_571_).source)) then
         local src = (_571_).short_src
         local line = (_571_).linedefined
         local source = (_571_).source
@@ -1852,7 +1852,7 @@ package.preload["fennel.specials"] = package.preload["fennel.specials"] or funct
         end
       end
       local function _507_()
-        return f:read("*all"):gsub("[\r\n]*$", "")
+        return f:read("*all"):gsub("[\13\n]*$", "")
       end
       src = close_handlers_8_auto(_G.xpcall(_507_, (package.loaded.fennel or debug).traceback))
     end
@@ -2008,12 +2008,12 @@ package.preload["fennel.compiler"] = package.preload["fennel.compiler"] or funct
   scopes.global.vararg = true
   scopes.compiler = make_scope(scopes.global)
   scopes.macro = scopes.global
-  local serialize_subst = {["\a"] = "\\a", ["\b"] = "\\b", ["\t"] = "\\t", ["\n"] = "n", ["\v"] = "\\v", ["\f"] = "\\f"}
+  local serialize_subst = {["\7"] = "\\a", ["\8"] = "\\b", ["\9"] = "\\t", ["\n"] = "n", ["\11"] = "\\v", ["\12"] = "\\f"}
   local function serialize_string(str)
     local function _210_(_241)
       return ("\\" .. _241:byte())
     end
-    return string.gsub(string.gsub(string.format("%q", str), ".", serialize_subst), "[x80-xff]", _210_)
+    return string.gsub(string.gsub(string.format("%q", str), ".", serialize_subst), "[\128-\255]", _210_)
   end
   local function global_mangling(str)
     if utils["valid-lua-identifier?"](str) then
@@ -2530,7 +2530,7 @@ package.preload["fennel.compiler"] = package.preload["fennel.compiler"] or funct
     elseif (multi_sym_parts and multi_sym_parts["multi-sym-method-call"]) then
       local table_with_method = table.concat({unpack(multi_sym_parts, 1, (#multi_sym_parts - 1))}, ".")
       local method_to_call = multi_sym_parts[#multi_sym_parts]
-      local new_ast = utils.list(utils.sym(":", ast), utils.sym(table_with_method, ast), method_to_call, select(2, unpack(ast)))
+      local new_ast = utils.list(utils.sym(":", nil, scope), utils.sym(table_with_method, nil, scope), method_to_call, select(2, unpack(ast)))
       return compile1(new_ast, scope, parent, opts)
     else
       return compile_function_call(ast, scope, parent, opts, compile1, len)
@@ -3108,7 +3108,7 @@ package.preload["fennel.friend"] = package.preload["fennel.friend"] or function(
   end
   local function read_line(filename, line, source)
     if source then
-      return read_line_from_string(string.gmatch((source .. "\n"), "(.-)(\r?\n)"), line)
+      return read_line_from_string(string.gmatch((source .. "\n"), "(.-)(\13?\n)"), line)
     else
       return read_line_from_file(filename, line)
     end
@@ -3467,7 +3467,7 @@ package.preload["fennel.parser"] = package.preload["fennel.parser"] or function(
         end
         table.remove(stack)
         local raw = string.char(unpack(chars))
-        local formatted = raw:gsub("[\a-\r]", escape_char)
+        local formatted = raw:gsub("[\7-\13]", escape_char)
         local _189_ = (rawget(_G, "loadstring") or load)(("return " .. formatted))
         if (nil ~= _189_) then
           local load_fn = _189_
@@ -3801,7 +3801,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
   end
   local function utf8_len(x)
     local n = 0
-    for _ in string.gmatch(x, "[%zx01-x7fxc0-xf7]") do
+    for _ in string.gmatch(x, "[%z\1-\127\192-\247]") do
       n = (n + 1)
     end
     return n
@@ -4054,7 +4054,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
     local index = 1
     local output = {}
     while (index <= #str) do
-      local nexti = (string.find(str, "[x80-xff]", index) or (#str + 1))
+      local nexti = (string.find(str, "[\128-\255]", index) or (#str + 1))
       local len = validate_utf8(str, nexti)
       table.insert(output, string.sub(str, index, (nexti + (len or 0) + -1)))
       if (not len and (nexti <= #str)) then
@@ -4080,7 +4080,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
     local function _88_(_241, _242)
       return ("\\%03d"):format(_242:byte())
     end
-    escs = setmetatable({["\a"] = "\\a", ["\b"] = "\\b", ["\f"] = "\\f", ["\v"] = "\\v", ["\r"] = "\\r", ["\t"] = "\\t", ["\\"] = "\\\\", ["\""] = "\\\"", ["\n"] = _86_}, {__index = _88_})
+    escs = setmetatable({["\7"] = "\\a", ["\8"] = "\\b", ["\12"] = "\\f", ["\11"] = "\\v", ["\13"] = "\\r", ["\9"] = "\\t", ["\\"] = "\\\\", ["\""] = "\\\"", ["\n"] = _86_}, {__index = _88_})
     local str0 = ("\"" .. str:gsub("[%c\\\"]", escs) .. "\"")
     if options["utf8?"] then
       return utf8_escape(str0)
@@ -4150,7 +4150,7 @@ package.preload["fennel.view"] = package.preload["fennel.view"] or function(...)
 end
 package.preload["fennel.utils"] = package.preload["fennel.utils"] or function(...)
   local view = require("fennel.view")
-  local version = "1.0.1-dev"
+  local version = "1.0.0"
   local function warn(message)
     if (_G.io and _G.io.stderr) then
       return (_G.io.stderr):write(("--WARNING: %s\n"):format(tostring(message)))
@@ -4347,8 +4347,8 @@ package.preload["fennel.utils"] = package.preload["fennel.utils"] or function(..
   local function list(...)
     return setmetatable({...}, list_mt)
   end
-  local function sym(str, _3fsource)
-    local s = {str}
+  local function sym(str, _3fsource, _3fscope)
+    local s = {["?scope"] = _3fscope, str}
     for k, v in pairs((_3fsource or {})) do
       if (type(k) == "string") then
         s[k] = v
@@ -4776,35 +4776,33 @@ do
              (tset tbl# i# val#))))
        tbl#))
   
-  (fn accumulate* [iter-tbl body ...]
+  (fn accumulate* [iter-tbl accum-expr ...]
     "Accumulation macro.
-  
-  It takes a binding table and an expression as its arguments.  In the binding
-  table, the first form starts out bound to the second value, which is an initial
-  accumulator. The rest are an iterator binding table in the format `each` takes.
-  
+  It takes a binding table and an expression as its arguments.
+  In the binding table, the first symbol is bound to the second value, being an
+  initial accumulator variable. The rest are an iterator binding table in the
+  format `each` takes.
   It runs through the iterator in each step of which the given expression is
-  evaluated, and the accumulator is set to the value of the expression. It
-  eventually returns the final value of the accumulator.
+  evaluated, and its returned value updates the accumulator variable.
+  It eventually returns the final value of the accumulator variable.
   
   For example,
     (accumulate [total 0
                  _ n (pairs {:apple 2 :orange 3})]
       (+ total n))
-  returns 5"
+  returns
+    5"
     (assert (and (sequence? iter-tbl) (>= (length iter-tbl) 4))
             "expected initial value and iterator binding table")
-    (assert (not= nil body) "expected body expression")
+    (assert (not= nil accum-expr) "expected accumulating expression")
     (assert (= nil ...)
             "expected exactly one body expression. Wrap multiple expressions with do")
     (let [accum-var (table.remove iter-tbl 1)
           accum-init (table.remove iter-tbl 1)]
       `(do (var ,accum-var ,accum-init)
            (each ,iter-tbl
-             (set ,accum-var ,body))
-           ,(if (list? accum-var)
-                (list (sym :values) (unpack accum-var))
-                accum-var))))
+             (set ,accum-var ,accum-expr))
+           ,accum-var)))
   
   (fn partial* [f ...]
     "Returns a function with all arguments partially applied to f."
@@ -5058,6 +5056,8 @@ do
     ;; which simply generates old syntax and feeds it to `match*'.
     (let [clauses [...]
           vals (match-val-syms clauses)]
+      (assert (= 0 (math.fmod (length clauses) 2))
+              "expected even number of pattern/body pairs")
       ;; protect against multiple evaluation of the value, bind against as
       ;; many values as we ever match against in the clauses.
       (list `let [vals val] (match-condition vals clauses))))
@@ -5117,14 +5117,16 @@ do
     pattern body
     (where pattern guard guards*) body
     (where (or pattern patterns*) guard guards*) body)"
-    (assert (= 0 (math.fmod (select :# ...) 2))
-            "expected even number of pattern/body pairs")
     (let [conds-bodies (partition-2 [...])
+          else-branch (if (not= 0 (% (select "#" ...) 2))
+                          (select (select "#" ...) ...))
           match-body []]
       (each [_ [cond body] (ipairs conds-bodies)]
         (each [_ cond (ipairs (transform-cond cond))]
           (table.insert match-body cond)
           (table.insert match-body body)))
+      (if else-branch
+          (table.insert match-body else-branch))
       (match* val (unpack match-body))))
   
   {:-> ->*

@@ -1,4 +1,3 @@
-(require-macros :golly)
 (local tiny (require :lib.tiny))
 (local easing (require :lib.easing))
 (local systems (require :golly.core.systems))

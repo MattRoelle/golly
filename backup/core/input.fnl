@@ -1,7 +1,5 @@
-(require-macros :golly)
-
 (local event-bus (require :golly.core.event-bus))
-(local gollymath (require :golly.math))
+(local {: vec} (require :golly.math.vector))
 
 (local input-events (event-bus))
 (var joysticks [])
@@ -119,7 +117,7 @@
 
 (fn mouse-position []
   (let [(x y) (love.mouse.getPosition)]
-    (gollymath.vector.vec x y))) 
+    (vec x y))) 
 
 (fn wheelmoved [x y]
   (input-events:dispatch :wheelmove x y))
