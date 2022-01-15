@@ -18,12 +18,17 @@
       (tset inst k (fn [self ...] (self:dispatch k ...))))
     (setmetatable inst StateMachine)))
 
+(local ClassMethod {})
+(set ClassMethod.__index ClassMethod)
+
+(fn ClassMethod.__call [self ...]
+  ((. self.source self.name) ...))
+
+(fn class-method [name source meta]
+  (setmetatable {: name : source : meta} ClassMethod))
+
 (local Class {})
 (set Class.__index Class)
-
-; (player:statemachine :main :idle
-;    {:jump {:from :idle :to :jumping}
-;     :land {:to :idle}})
 
 (fn Class.statemachine [self name initial transitions]
   (tset self.__statemachines name [initial transitions]))
@@ -40,25 +45,26 @@
     (let [f (. other.__mt fname)]
       (self:method fname {:on meta.events :source other :state meta.state} f))))
 
+(fn Class.__remove-method [self name]
+  (let [method (. self.__mt.__methods name)]
+    (assert (= method.source self)
+            (.. "Method collision, " name " has already been defined by another class"))
+    (each [ix ev (ipairs method.meta.events)]
+      (table.remove (. self.__mt.__event-handlers ev) ix))))
+
 (fn Class.method [self name meta f]
   (when (. self.__mt name)
+    (self:__remove-method name))
     ;; Clean up existing method definition
-    (let [method (. self.__mt.__methods name)]
-      (assert (= method.source self)
-              (.. "Method collision, " name " has already been defined by another class"))
-      (each [ix ev (ipairs method.events)]
-        (table.remove (. self.__mt.__handlers ev) ix))))
   (let [events (or (when meta.on (if (= (type meta.on) "table") meta.on [meta.on])) [])
         state meta.state]
-    (tset self.__mt name f)
-    (tset self.__mt.__methods name {:source (or meta.source self)
-                                    : events
-                                    : state})
+    (tset self.__mt.__methods name f)
+    (tset self.__mt name (class-method name self.__mt.__methods {: events : state}))
     (when meta.on
       (each [_ ev (ipairs events)]
-        (when (not (. self.__mt.__handlers ev))
-          (tset self.__mt.__handlers ev []))
-        (table.insert (. self.__mt.__handlers ev) name)))))
+        (when (not (. self.__mt.__event-handlers ev))
+          (tset self.__mt.__event-handlers ev []))
+        (table.insert (. self.__mt.__event-handlers ev) name)))))
   
 (fn Class.__call [self fields ...]
   (let [o (lume.merge self.__fields (or fields {}))
@@ -75,7 +81,7 @@
     inst))
 
 (fn instance-dispatch [self ev ...]
-  (each [_ fname (ipairs (or (. self.__handlers ev) []))]
+  (each [_ fname (ipairs (or (. self.__event-handlers ev) []))]
     (let [meta (. self.__methods fname)]
       (when (or (not meta.state)
                 (accumulate [acc true k v (pairs meta.state)]
@@ -87,7 +93,7 @@
   
 (fn class []
   (let [mt {:__methods {}
-            :__handlers {}
+            :__event-handlers {}
             :dispatch instance-dispatch
             :state-dispatch instance-state-dispatch}]
     (set mt.__index mt)
