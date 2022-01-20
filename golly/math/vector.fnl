@@ -156,5 +156,5 @@
 
 
 {: vec 
- : line
+ : Vector2D
  : polar-vec2}

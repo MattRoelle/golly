@@ -17,4 +17,4 @@ table.insert(package.loaders, make_love_searcher(_G))
 table.insert(fennel["macro-searchers"], make_love_searcher("_COMPILER"))
 
 require("golly.backends.love.bootstrap")
-require("example-asteroids")
+require("love-example")
