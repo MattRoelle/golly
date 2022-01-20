@@ -40,7 +40,7 @@
       (g.timeline.tween 1 foo-instance.position (g.vec 400 400))
       (g.timeline.tween 1 foo-instance.position (g.vec 200 200)))))
 
-;; Change colros 
+;; Change colors 
 (scene:timeline
   (fn []
     (while true
@@ -51,13 +51,6 @@
       (set foo-instance.color [0 0 1 1])
       (g.timeline.wait 0.5))))
 
-(scene:timeline
-  (fn []
-    ;; Move back and forth forever
-    (while true
-      (g.timeline.tween 1 foo-instance.position (g.vec 400 400))
-      (g.timeline.tween 1 foo-instance.position (g.vec 200 200)))))
-  
 ;; Boilerplate love.run
 (fn love.run []
  (repl.start)
